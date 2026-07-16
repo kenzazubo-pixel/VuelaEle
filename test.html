@@ -1,0 +1,629 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VuelaEle - Estación 1: La Casa y sus Acciones</title>
+    <!-- Tailwind CSS para diseño moderno -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts para tipografía amigable -->
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Quicksand:wght@400;600;700&display=swap" rel="stylesheet">
+    <!-- FontAwesome para iconos -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        body {
+            font-family: 'Quicksand', sans-serif;
+            background: radial-gradient(circle, #fefefe 0%, #f1f5f9 100%);
+        }
+        .font-title {
+            font-family: 'Fredoka One', cursive;
+        }
+        .card-pop {
+            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        .card-pop:hover {
+            transform: translateY(-5px);
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col justify-between text-slate-800">
+
+    <!-- Header / Barra de Navegación -->
+    <header class="bg-indigo-600 text-white shadow-lg py-4 px-6 sticky top-0 z-50">
+        <div class="max-w-5xl mx-auto flex justify-between items-center">
+            <div class="flex items-center space-x-3">
+                <div class="bg-white text-indigo-600 p-2 rounded-full w-10 h-10 flex items-center justify-center font-bold text-xl shadow-md font-title">V</div>
+                <div>
+                    <h1 class="font-title text-xl tracking-wide">VuelaEle</h1>
+                    <p class="text-xs text-indigo-200">Estación 1: Clase Flexible de Profe Gemi</p>
+                </div>
+            </div>
+            <div class="flex items-center space-x-2 bg-indigo-700 px-3 py-1.5 rounded-full text-sm">
+                <i class="fa-solid fa-gamepad text-yellow-300 animate-pulse"></i>
+                <span class="font-semibold" id="score-display">Puntos: 0</span>
+            </div>
+        </div>
+    </header>
+
+    <!-- Contenido Principal -->
+    <main class="max-w-5xl w-full mx-auto p-4 flex-grow flex flex-col justify-center">
+        
+        <!-- Pantalla de Inicio / Bienvenida -->
+        <section id="screen-welcome" class="bg-white rounded-3xl p-6 md:p-8 shadow-xl text-center max-w-2xl mx-auto border-2 border-slate-100 card-pop">
+            <span class="bg-amber-100 text-amber-800 text-xs px-3 py-1 rounded-full font-bold uppercase tracking-wider">¡Bienvenidos a Casablanca!</span>
+            <h2 class="font-title text-3xl md:text-4xl text-indigo-600 mt-3 mb-4">¿Qué hacemos en casa?</h2>
+            
+            <div class="flex justify-center my-6">
+                <!-- Avatar interactivo de Profe Gemi -->
+                <div class="relative">
+                    <div class="w-32 h-32 bg-indigo-100 rounded-full flex items-center justify-center text-6xl shadow-inner border-4 border-indigo-200">
+                        🦉
+                    </div>
+                    <span class="absolute bottom-0 right-0 bg-green-500 text-white text-xs px-2 py-1 rounded-full font-bold">Profe Gemi</span>
+                </div>
+            </div>
+
+            <p class="text-lg text-slate-600 mb-6 leading-relaxed">
+                ¡Hola! En esta estación vas a descubrir los lugares de una casa y las actividades que hacemos en ellos de forma interactiva. 
+                Escucha la pronunciación, asocia las tarjetas y supera el desafío para desbloquear tu <strong>Trace Écrite</strong>.
+            </p>
+
+            <button onclick="startApp()" class="w-full sm:w-auto bg-emerald-500 hover:bg-emerald-600 text-white font-bold text-xl px-8 py-4 rounded-2xl shadow-lg transition duration-200 hover:scale-105 font-title tracking-wide">
+                <i class="fa-solid fa-play mr-2"></i> ¡Comenzar Estación!
+            </button>
+        </section>
+
+        <!-- Pantalla del Juego de Asociación -->
+        <section id="screen-match" class="hidden space-y-6">
+            <div class="bg-white rounded-2xl p-4 shadow-md border border-slate-100 flex flex-col md:flex-row justify-between items-center gap-4">
+                <div class="flex items-center space-x-3">
+                    <span class="bg-indigo-100 text-indigo-700 w-8 h-8 rounded-full flex items-center justify-center font-bold">1</span>
+                    <h3 class="font-title text-lg text-slate-700">Fase de Asociación: Conecta el Lugar con su Acción</h3>
+                </div>
+                <div class="flex items-center space-x-3 w-full md:w-auto justify-end">
+                    <button onclick="speak('¡Asocia el lugar con la acción correcta!', 'es-ES')" class="text-slate-400 hover:text-indigo-600 p-2 rounded-full" title="Escuchar instrucción">
+                        <i class="fa-solid fa-volume-high text-xl"></i>
+                    </button>
+                    <span class="text-sm bg-slate-100 px-3 py-1 rounded-full font-semibold text-slate-600" id="match-progress">Completado: 0 / 6</span>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <!-- Columna Lugares (Izquierda) -->
+                <div class="space-y-3">
+                    <h4 class="font-title text-indigo-600 text-center uppercase tracking-wider text-sm mb-2"><i class="fa-solid fa-house"></i> Lugares de la Casa</h4>
+                    <div id="places-container" class="space-y-3">
+                        <!-- Generado dinámicamente -->
+                    </div>
+                </div>
+
+                <!-- Columna Acciones (Derecha) -->
+                <div class="space-y-3">
+                    <h4 class="font-title text-emerald-600 text-center uppercase tracking-wider text-sm mb-2"><i class="fa-solid fa-person-running"></i> ¿Qué hacemos allí?</h4>
+                    <div id="actions-container" class="space-y-3">
+                        <!-- Generado dinámicamente -->
+                    </div>
+                </div>
+            </div>
+            
+            <div class="flex justify-center mt-6">
+                <button id="btn-to-challenge" disabled class="bg-slate-300 text-slate-500 font-title px-8 py-3.5 rounded-xl cursor-not-allowed shadow transition-all duration-200" onclick="goToChallenge()">
+                    Siguiente: El Desafío Rápido <i class="fa-solid fa-arrow-right ml-2"></i>
+                </button>
+            </div>
+        </section>
+
+        <!-- Pantalla de Desafío Rápido (Quiz situacional) -->
+        <section id="screen-challenge" class="hidden max-w-xl mx-auto bg-white rounded-3xl p-6 md:p-8 shadow-xl border-2 border-indigo-100">
+            <div class="text-center mb-6">
+                <span class="bg-amber-100 text-amber-800 text-xs px-3 py-1 rounded-full font-bold uppercase tracking-wider">Fase 2: El Desafío</span>
+                <h3 class="font-title text-2xl text-slate-800 mt-2">¿Adónde tengo que ir?</h3>
+                <p class="text-sm text-slate-500 mt-1">Lee la situación del Profe Gemi y ayuda a decidir el lugar adecuado.</p>
+            </div>
+
+            <!-- Caja de Pregunta -->
+            <div class="bg-slate-50 rounded-2xl p-5 border border-slate-100 text-center mb-6 relative">
+                <button onclick="speakQuestion()" class="absolute top-3 right-3 text-indigo-500 hover:text-indigo-700 bg-white shadow p-2 rounded-full h-9 w-9 flex items-center justify-center">
+                    <i class="fa-solid fa-volume-high"></i>
+                </button>
+                <span class="text-4xl block mb-2" id="challenge-emoji">🛌</span>
+                <p class="text-xl font-bold text-slate-700" id="challenge-phrase">"Tengo mucho sueño y quiero dormir..."</p>
+            </div>
+
+            <!-- Opciones -->
+            <div id="challenge-options" class="space-y-3">
+                <!-- Generado dinámicamente -->
+            </div>
+
+            <!-- Progreso del Quiz -->
+            <div class="mt-6 flex justify-between items-center text-sm text-slate-500">
+                <span id="challenge-step">Pregunta: 1 / 4</span>
+                <div class="w-1/2 bg-slate-100 rounded-full h-2.5">
+                    <div id="challenge-progress-bar" class="bg-indigo-600 h-2.5 rounded-full" style="width: 25%"></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Pantalla de Trace Écrite (Ficha de Aprendizaje) -->
+        <section id="screen-trace" class="hidden max-w-2xl mx-auto space-y-6">
+            <div class="bg-emerald-50 border border-emerald-200 rounded-2xl p-6 text-center shadow-sm">
+                <div class="inline-block bg-emerald-100 text-emerald-800 p-3 rounded-full text-3xl mb-3">🎉</div>
+                <h3 class="font-title text-2xl text-emerald-800">¡Reto conseguido!</h3>
+                <p class="text-slate-600 text-sm mt-1">Has completado la Estación 1 con éxito. Ahora prepara tu cuaderno.</p>
+            </div>
+
+            <!-- Cuaderno de Trace Écrite -->
+            <div class="bg-white rounded-3xl shadow-xl border-4 border-dashed border-indigo-200 p-6 relative overflow-hidden">
+                <div class="absolute top-0 right-0 bg-indigo-600 text-white font-title text-xs px-4 py-1 rounded-bl-xl uppercase tracking-widest">Trace Écrite Obligatoria</div>
+                
+                <div class="flex items-center space-x-3 mb-6">
+                    <div class="text-3xl">📝</div>
+                    <div>
+                        <h4 class="font-title text-xl text-indigo-700">Mi Cuaderno de Español</h4>
+                        <p class="text-xs text-slate-400">Completa con tu nombre y copia este resumen en tu cuaderno de español.</p>
+                    </div>
+                </div>
+
+                <!-- Campo Nombre Alumno -->
+                <div class="mb-6 flex flex-col sm:flex-row sm:items-center gap-2">
+                    <label class="font-bold text-slate-700">Nombre del alumno/a:</label>
+                    <input type="text" id="student-name" placeholder="Escribe tu nombre aquí..." class="border-b-2 border-indigo-400 focus:outline-none focus:border-indigo-600 px-2 py-1 text-lg text-indigo-700 font-semibold flex-grow bg-slate-50 rounded">
+                </div>
+
+                <!-- Contenido Formateado -->
+                <div class="bg-slate-50 rounded-2xl p-5 border border-slate-100 font-mono text-sm text-slate-700 space-y-3 leading-relaxed" id="trace-text-box">
+                    <p class="font-bold text-slate-900 border-b pb-2 mb-2">📌 VOCABULARIO CLAVE: LA CASA Y LAS ACCIONES</p>
+                    <ul class="space-y-2 list-disc list-inside">
+                        <li>En el <strong>dormitorio</strong> yo <u>duermo</u> y descanso.</li>
+                        <li>En la <strong>cocina</strong> yo <u>cocino</u> y preparo comida deliciosa.</li>
+                        <li>En el <strong>baño</strong> yo me <u>ducho</u> y me lavo los dientes.</li>
+                        <li>En el <strong>salón</strong> yo veo la <u>televisión</u> y charlo en familia.</li>
+                        <li>En el <strong>jardín</strong> yo juego al <u>aire libre</u> y riego las plantas.</li>
+                        <li>En el <strong>comedor</strong> yo <u>como</u> con mi familia.</li>
+                    </ul>
+                </div>
+
+                <!-- Botones de Acción -->
+                <div class="mt-6 flex flex-wrap gap-3 justify-center">
+                    <button onclick="copyTraceText()" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-5 py-2.5 rounded-xl shadow transition flex items-center space-x-2">
+                        <i class="fa-regular fa-copy"></i> <span>Copiar texto</span>
+                    </button>
+                    <button onclick="window.print()" class="bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold px-5 py-2.5 rounded-xl border border-slate-200 transition flex items-center space-x-2">
+                        <i class="fa-solid fa-print"></i> <span>Imprimir Ficha</span>
+                    </button>
+                </div>
+            </div>
+
+            <div class="text-center">
+                <button onclick="resetGame()" class="text-indigo-600 hover:text-indigo-800 font-bold text-sm underline">
+                    <i class="fa-solid fa-rotate-left"></i> Volver a jugar (Nueva sesión)
+                </button>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Footer Fijo -->
+    <footer class="bg-slate-100 border-t border-slate-200 py-3 text-center text-xs text-slate-500">
+        <div class="max-w-5xl mx-auto px-4 flex flex-col sm:flex-row justify-between items-center gap-2">
+            <p>© 2026 Lycée Français de Casablanca - VuelaEle - Profe Gemi</p>
+            <p class="font-semibold text-indigo-600"><i class="fa-solid fa-brain"></i> Pedagogía Activa & Estaciones Autónomas</p>
+        </div>
+    </footer>
+
+    <!-- Sistema de Alertas/Modales Personalizado -->
+    <div id="custom-modal" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-fade-in">
+        <div class="bg-white rounded-3xl p-6 max-w-sm w-full text-center shadow-2xl border border-slate-100 transform scale-95 transition-transform duration-200">
+            <div id="modal-icon" class="text-5xl mb-4">🎉</div>
+            <h4 id="modal-title" class="font-title text-xl text-slate-800">¡Muy bien!</h4>
+            <p id="modal-message" class="text-slate-600 text-sm mt-2 mb-6">Mensaje descriptivo</p>
+            <button onclick="closeModal()" id="modal-btn" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 rounded-xl transition shadow">
+                Continuar
+            </button>
+        </div>
+    </div>
+
+    <!-- Script de Audio y Lógica de Juego -->
+    <script>
+        // Datos de la Estación (Lugares y sus correspondientes acciones con audios)
+        const gameData = [
+            { id: 1, place: "El dormitorio", action: "Duermo y descanso en mi cama", icon: "🛌", speechPlace: "el dormitorio", speechAction: "duermo y descanso en mi cama" },
+            { id: 2, place: "La cocina", action: "Cocino y preparo comida deliciosa", icon: "🍳", speechPlace: "la cocina", speechAction: "cocino y preparo comida deliciosa" },
+            { id: 3, place: "El baño", action: "Me ducho y me lavo los dientes", icon: "🧼", speechPlace: "el baño", speechAction: "me ducho y me lavo los dientes" },
+            { id: 4, place: "El salón", action: "Veo la televisión y hablo con mi familia", icon: "📺", speechPlace: "el salón", speechAction: "veo la televisión y hablo con mi familia" },
+            { id: 5, place: "El jardín", action: "Juego al aire libre y riego las plantas", icon: "🌳", speechPlace: "el jardín", speechAction: "juego al aire libre y riego las plantas" },
+            { id: 6, place: "El comedor", action: "Como con mi familia en la mesa grande", icon: "🍽️", speechPlace: "el comedor", speechAction: "como con mi familia en la mesa grande" }
+        ];
+
+        const challenges = [
+            { question: "Tengo mucha hambre y quiero cocinar unos tacos...", options: ["La cocina", "El baño", "El dormitorio"], correct: "La cocina", emoji: "🌮" },
+            { question: "Quiero ver mi serie favorita cómodamente en el sofá...", options: ["El jardín", "El salón", "La cocina"], correct: "El salón", emoji: "🛋️" },
+            { question: "Hace un día precioso y quiero jugar al balón en la hierba...", options: ["El comedor", "El dormitorio", "El jardín"], correct: "El jardín", emoji: "⚽" },
+            { question: "He terminado de cenar y necesito lavarme los dientes...", options: ["El baño", "La cocina", "El salón"], correct: "El baño", emoji: "🪥" }
+        ];
+
+        let selectedPlace = null;
+        let selectedAction = null;
+        let completedPairsCount = 0;
+        let currentScore = 0;
+        let currentChallengeIndex = 0;
+
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+        // Sintetizador para efectos de sonido divertidos
+        function playSynthSound(type) {
+            try {
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+
+                if (type === 'success') {
+                    osc.frequency.setValueAtTime(440, audioCtx.currentTime);
+                    osc.frequency.exponentialRampToValueAtTime(880, audioCtx.currentTime + 0.25);
+                    gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+                    gain.gain.linearRampToValueAtTime(0.01, audioCtx.currentTime + 0.25);
+                    osc.start();
+                    osc.stop(audioCtx.currentTime + 0.25);
+                } else if (type === 'fail') {
+                    osc.frequency.setValueAtTime(220, audioCtx.currentTime);
+                    osc.frequency.exponentialRampToValueAtTime(110, audioCtx.currentTime + 0.3);
+                    gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+                    gain.gain.linearRampToValueAtTime(0.01, audioCtx.currentTime + 0.3);
+                    osc.start();
+                    osc.stop(audioCtx.currentTime + 0.3);
+                } else if (type === 'win') {
+                    const now = audioCtx.currentTime;
+                    const freqs = [523.25, 659.25, 783.99, 1046.50];
+                    freqs.forEach((f, i) => {
+                        const o = audioCtx.createOscillator();
+                        const g = audioCtx.createGain();
+                        o.connect(g);
+                        g.connect(audioCtx.destination);
+                        o.frequency.setValueAtTime(f, now + i * 0.1);
+                        g.gain.setValueAtTime(0.08, now + i * 0.1);
+                        g.gain.linearRampToValueAtTime(0.01, now + i * 0.1 + 0.3);
+                        o.start(now + i * 0.1);
+                        o.stop(now + i * 0.1 + 0.3);
+                    });
+                }
+            } catch (e) {
+                console.log("No se pudo iniciar el audio:", e);
+            }
+        }
+
+        function speak(text, lang = "es-ES") {
+            if ('speechSynthesis' in window) {
+                window.speechSynthesis.cancel();
+                const utterance = new SpeechSynthesisUtterance(text);
+                utterance.lang = lang;
+                utterance.rate = 0.9;
+                window.speechSynthesis.speak(utterance);
+            }
+        }
+
+        function showCustomModal(title, text, icon, btnText, callback) {
+            document.getElementById('modal-title').innerText = title;
+            document.getElementById('modal-message').innerText = text;
+            document.getElementById('modal-icon').innerText = icon;
+            const btn = document.getElementById('modal-btn');
+            btn.innerText = btnText;
+            btn.onclick = function() {
+                closeModal();
+                if (callback) callback();
+            };
+            document.getElementById('custom-modal').classList.remove('hidden');
+        }
+
+        // Cierra el modal de alerta
+        function closeModal() {
+            document.getElementById('custom-modal').classList.add('hidden');
+        }
+
+        // Cambia pantallas para comenzar la fase 1
+        function startApp() {
+            document.getElementById('screen-welcome').classList.add('hidden');
+            document.getElementById('screen-match').classList.remove('hidden');
+            setupMatchingGame();
+            speak("¡Asocia el lugar con la acción correcta!", "es-ES");
+        }
+
+        // Algoritmo de barajado de tarjetas
+        function shuffle(array) {
+            let currentIndex = array.length, randomIndex;
+            const newArray = [...array];
+            while (currentIndex != 0) {
+                randomIndex = Math.floor(Math.random() * currentIndex);
+                currentIndex--;
+                [newArray[currentIndex], newArray[randomIndex]] = [newArray[randomIndex], newArray[currentIndex]];
+            }
+            return newArray;
+        }
+
+        // Carga dinámica de tarjetas para asociar
+        function setupMatchingGame() {
+            const placesContainer = document.getElementById('places-container');
+            const actionsContainer = document.getElementById('actions-container');
+
+            placesContainer.innerHTML = '';
+            actionsContainer.innerHTML = '';
+
+            const shuffledPlaces = shuffle(gameData);
+            const shuffledActions = shuffle(gameData);
+
+            shuffledPlaces.forEach(item => {
+                const card = document.createElement('div');
+                card.id = `place-${item.id}`;
+                card.className = "flex justify-between items-center bg-white border-2 border-slate-200 hover:border-indigo-400 p-3.5 rounded-xl cursor-pointer transition-all duration-200 shadow-sm active:scale-95";
+                card.onclick = () => selectCard('place', item.id);
+                card.innerHTML = `
+                    <div class="flex items-center space-x-3">
+                        <span class="text-2xl">${item.icon}</span>
+                        <span class="font-semibold text-slate-700">${item.place}</span>
+                    </div>
+                    <button class="text-indigo-400 hover:text-indigo-600 p-1.5 rounded-lg" onclick="event.stopPropagation(); speak('${item.speechPlace}')">
+                        <i class="fa-solid fa-volume-high"></i>
+                    </button>
+                `;
+                placesContainer.appendChild(card);
+            });
+
+            shuffledActions.forEach(item => {
+                const card = document.createElement('div');
+                card.id = `action-${item.id}`;
+                card.className = "flex justify-between items-center bg-white border-2 border-slate-200 hover:border-emerald-400 p-3.5 rounded-xl cursor-pointer transition-all duration-200 shadow-sm active:scale-95";
+                card.onclick = () => selectCard('action', item.id);
+                card.innerHTML = `
+                    <div class="flex items-center space-x-3">
+                        <span class="text-slate-600 font-medium text-sm leading-tight">${item.action}</span>
+                    </div>
+                    <button class="text-emerald-400 hover:text-emerald-600 p-1.5 rounded-lg shrink-0" onclick="event.stopPropagation(); speak('${item.speechAction}')">
+                        <i class="fa-solid fa-volume-high"></i>
+                    </button>
+                `;
+                actionsContainer.appendChild(card);
+            });
+        }
+
+        // Lógica de selección de tarjetas individuales
+        function selectCard(type, id) {
+            if (type === 'place') {
+                if (selectedPlace) {
+                    const prevSelected = document.getElementById(`place-${selectedPlace}`);
+                    if (prevSelected) prevSelected.classList.remove('border-indigo-600', 'bg-indigo-50/50');
+                }
+                selectedPlace = id;
+                const card = document.getElementById(`place-${id}`);
+                if (card) card.classList.add('border-indigo-600', 'bg-indigo-50/50');
+                speak(gameData.find(d => d.id === id).speechPlace);
+            } else {
+                if (selectedAction) {
+                    const prevSelected = document.getElementById(`action-${selectedAction}`);
+                    if (prevSelected) prevSelected.classList.remove('border-emerald-600', 'bg-emerald-50/50');
+                }
+                selectedAction = id;
+                const card = document.getElementById(`action-${id}`);
+                if (card) card.classList.add('border-emerald-600', 'bg-emerald-50/50');
+                speak(gameData.find(d => d.id === id).speechAction);
+            }
+
+            if (selectedPlace && selectedAction) {
+                if (selectedPlace === selectedAction) {
+                    playSynthSound('success');
+                    updateScore(10);
+                    
+                    const pCard = document.getElementById(`place-${selectedPlace}`);
+                    const aCard = document.getElementById(`action-${selectedAction}`);
+
+                    pCard.className = "flex justify-between items-center bg-emerald-50 border-2 border-emerald-500 p-3.5 rounded-xl opacity-75 cursor-default pointer-events-none shadow-sm";
+                    aCard.className = "flex justify-between items-center bg-emerald-50 border-2 border-emerald-500 p-3.5 rounded-xl opacity-75 cursor-default pointer-events-none shadow-sm";
+
+                    completedPairsCount++;
+                    document.getElementById('match-progress').innerText = `Completado: ${completedPairsCount} / 6`;
+
+                    selectedPlace = null;
+                    selectedAction = null;
+
+                    if (completedPairsCount === 6) {
+                        playSynthSound('win');
+                        showCustomModal(
+                            "¡Excelente asociación!", 
+                            "Has relacionado todos los espacios y acciones perfectamente. ¡A por la siguiente fase!", 
+                            "🏆", 
+                            "Fase 2: El Desafío", 
+                            () => {
+                                const nextBtn = document.getElementById('btn-to-challenge');
+                                nextBtn.disabled = false;
+                                nextBtn.className = "bg-indigo-600 hover:bg-indigo-700 text-white font-title px-8 py-3.5 rounded-xl cursor-pointer shadow-lg transition-all duration-200 hover:scale-105";
+                                goToChallenge();
+                            }
+                        );
+                    }
+                } else {
+                    playSynthSound('fail');
+                    const pCard = document.getElementById(`place-${selectedPlace}`);
+                    const aCard = document.getElementById(`action-${selectedAction}`);
+
+                    pCard.classList.add('border-red-500', 'bg-red-50');
+                    aCard.classList.add('border-red-500', 'bg-red-50');
+
+                    const prevP = selectedPlace;
+                    const prevA = selectedAction;
+                    selectedPlace = null;
+                    selectedAction = null;
+
+                    setTimeout(() => {
+                        const cardP = document.getElementById(`place-${prevP}`);
+                        const cardA = document.getElementById(`action-${prevA}`);
+                        if (cardP) {
+                            cardP.classList.remove('border-red-500', 'bg-red-50', 'border-indigo-600', 'bg-indigo-50/50');
+                            cardP.classList.add('border-slate-200');
+                        }
+                        if (cardA) {
+                            cardA.classList.remove('border-red-500', 'bg-red-50', 'border-emerald-600', 'bg-emerald-50/50');
+                            cardA.classList.add('border-slate-200');
+                        }
+                    }, 800);
+                }
+            }
+        }
+
+        function updateScore(points) {
+            currentScore += points;
+            document.getElementById('score-display').innerText = `Puntos: ${currentScore}`;
+        }
+
+        function goToChallenge() {
+            document.getElementById('screen-match').classList.add('hidden');
+            document.getElementById('screen-challenge').classList.remove('hidden');
+            loadChallenge();
+        }
+
+        // Cargador del quiz rápido
+        function loadChallenge() {
+            if (currentChallengeIndex >= challenges.length) {
+                playSynthSound('win');
+                showCustomModal(
+                    "¡Increíble!", 
+                    "Has superado el Desafío de Profe Gemi. Tu Trace Écrite está desbloqueada.", 
+                    "⭐", 
+                    "Ir al Cuaderno", 
+                    () => {
+                        document.getElementById('screen-challenge').classList.add('hidden');
+                        document.getElementById('screen-trace').classList.remove('hidden');
+                        speak("¡Muy bien hecho! Ahora copia la trace écrite en tu cuaderno.", "es-ES");
+                    }
+                );
+                return;
+            }
+
+            const current = challenges[currentChallengeIndex];
+            
+            document.getElementById('challenge-emoji').innerText = current.emoji;
+            document.getElementById('challenge-phrase').innerText = `"${current.question}"`;
+            document.getElementById('challenge-step').innerText = `Pregunta: ${currentChallengeIndex + 1} / ${challenges.length}`;
+            
+            const progressPercent = ((currentChallengeIndex + 1) / challenges.length) * 100;
+            document.getElementById('challenge-progress-bar').style.width = `${progressPercent}%`;
+
+            const optionsContainer = document.getElementById('challenge-options');
+            optionsContainer.innerHTML = '';
+
+            current.options.forEach(option => {
+                const btn = document.createElement('button');
+                btn.className = "w-full text-left bg-white border-2 border-slate-200 hover:border-indigo-500 p-4 rounded-xl font-semibold transition duration-200 active:scale-[0.99] flex items-center justify-between";
+                btn.innerHTML = `
+                    <span>${option}</span>
+                    <i class="fa-regular fa-circle-check text-slate-300"></i>
+                `;
+                btn.onclick = () => verifyChallengeAnswer(option);
+                optionsContainer.appendChild(btn);
+            });
+
+            setTimeout(() => {
+                speakQuestion();
+            }, 500);
+        }
+
+        function speakQuestion() {
+            const current = challenges[currentChallengeIndex];
+            speak(current.question);
+        }
+
+        // Validación de respuestas del quiz
+        function verifyChallengeAnswer(selectedOption) {
+            const current = challenges[currentChallengeIndex];
+            const optionsContainer = document.getElementById('challenge-options');
+            
+            Array.from(optionsContainer.children).forEach(btn => {
+                btn.disabled = true;
+                const text = btn.querySelector('span').innerText;
+                
+                if (text === current.correct) {
+                    btn.className = "w-full text-left bg-emerald-50 border-2 border-emerald-500 p-4 rounded-xl font-bold text-emerald-800 flex items-center justify-between shadow-sm";
+                    btn.querySelector('i').className = "fa-solid fa-circle-check text-emerald-600";
+                } else if (text === selectedOption) {
+                    btn.className = "w-full text-left bg-red-50 border-2 border-red-500 p-4 rounded-xl font-semibold text-red-800 flex items-center justify-between shadow-sm";
+                    btn.querySelector('i').className = "fa-solid fa-circle-xmark text-red-600";
+                } else {
+                    btn.className = "w-full text-left bg-white border-2 border-slate-100 p-4 rounded-xl font-medium text-slate-400 flex items-center justify-between opacity-50";
+                }
+            });
+
+            if (selectedOption === current.correct) {
+                playSynthSound('success');
+                updateScore(20);
+                setTimeout(() => {
+                    currentChallengeIndex++;
+                    loadChallenge();
+                }, 1500);
+            } else {
+                playSynthSound('fail');
+                setTimeout(() => {
+                    currentChallengeIndex++;
+                    loadChallenge();
+                }, 1500);
+            }
+        }
+
+        // Copia el texto formateado al portapapeles
+        function copyTraceText() {
+            const studentName = document.getElementById('student-name').value.trim() || 'Alumno/a';
+            const textToCopy = `📌 VOCABULARIO CLAVE: LA CASA Y LAS ACCIONES\n` +
+                `Estudiante: ${studentName}\n\n` +
+                `- En el dormitorio yo duermo y descanso.\n` +
+                `- En la cocina yo cocino y preparo comida deliciosa.\n` +
+                `- En el baño yo me ducho y me lavo los dientes.\n` +
+                `- En el salón yo veo la televisión y charlo en familia.\n` +
+                `- En el jardín yo juego al aire libre y riego las plantas.\n` +
+                `- En el comedor yo como con mi familia.\n`;
+
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(textToCopy).then(() => {
+                    showCustomModal("¡Texto Copiado!", "El resumen se ha copiado con éxito al portapapeles. ¡Listo para pegar!", "📋", "Entendido");
+                }).catch(err => {
+                    console.error("Error al copiar: ", err);
+                });
+            } else {
+                // Fallback clásico para navegadores que no admiten la API del portapapeles directamente
+                const textArea = document.createElement("textarea");
+                textArea.value = textToCopy;
+                document.body.appendChild(textArea);
+                textArea.select();
+                try {
+                    document.execCommand('copy');
+                    showCustomModal("¡Texto Copiado!", "El resumen se ha copiado con éxito al portapapeles.", "📋", "Entendido");
+                } catch (err) {
+                    alert("No se pudo copiar el texto. Selecciónalo manualmente.");
+                }
+                document.body.removeChild(textArea);
+            }
+        }
+
+        // Reinicia completamente el estado del juego para una nueva sesión sin recargar
+        function resetGame() {
+            selectedPlace = null;
+            selectedAction = null;
+            completedPairsCount = 0;
+            currentScore = 0;
+            currentChallengeIndex = 0;
+
+            // Reinicio de marcadores visuales
+            document.getElementById('score-display').innerText = "Puntos: 0";
+            document.getElementById('match-progress').innerText = "Completado: 0 / 6";
+            document.getElementById('student-name').value = "";
+
+            // Regenerar las tarjetas y resetear botón de desafío
+            setupMatchingGame();
+            const nextBtn = document.getElementById('btn-to-challenge');
+            nextBtn.disabled = true;
+            nextBtn.className = "bg-slate-300 text-slate-500 font-title px-8 py-3.5 rounded-xl cursor-not-allowed shadow transition-all duration-200";
+
+            // Transición a la pantalla de bienvenida
+            document.getElementById('screen-trace').classList.add('hidden');
+            document.getElementById('screen-welcome').classList.remove('hidden');
+        }
+    </script>
+</body>
+</html>
