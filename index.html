@@ -1623,6 +1623,25 @@ function vStations(){
         <label class="label" style="color:rgba(201,211,232,.6)">Instrucciones</label>
         <textarea class="textarea" id="st-desc" rows="3" placeholder="¿Qué deben hacer los alumnos?">${data[s].description||""}</textarea>
       </div>
+      <!-- Nuevo campo: Ejercicios -->
+          <div class="form-row" style="margin-bottom:16px">
+            <label class="label" style="color:rgba(201,211,232,.6)">Ejercicios / Actividades</label>
+            <textarea class="textarea" 
+                      id="st-exercises" 
+                      rows="3" 
+                      placeholder="Escribe aquí las tareas o preguntas para esta estación...">${data[s].exercises||""}</textarea>
+          </div>
+
+          <!-- Nuevo campo: Tipo de entrega -->
+          <div class="form-row" style="margin-bottom:16px">
+            <label class="label" style="color:rgba(201,211,232,.6)">Tipo de entrega (Evidencia)</label>
+            <select id="st-delivery" 
+                    style="width:100%; padding:10px 12px; border-radius:8px; background:#121826; color:white; border:1px solid rgba(201,211,232,.2); outline:none; font-size:14px; font-family:inherit;">
+              <option value="none" ${data[s].delivery === "none" ? "selected" : ""}>Sin entrega (trabajo físico u oral)</option>
+              <option value="text" ${data[s].delivery === "text" ? "selected" : ""}>Responder con texto en la app</option>
+              <option value="photo" ${data[s].delivery === "photo" ? "selected" : ""}>Subir foto del cuaderno</option>
+            </select>
+          </div>
       <div class="form-row" style="margin-bottom:16px">
         <label class="label" style="color:rgba(201,211,232,.6)">Enlace web (opcional)</label>
         <input class="input" id="st-link" value="${data[s].link||""}" placeholder="https://...">
@@ -1635,7 +1654,13 @@ function vStations(){
 
 function saveStation(i){
   const data=JSON.parse(localStorage.getItem("gse.v3.stations")||"[{},{},{}]");
-  data[i]={title:document.getElementById("st-title").value,description:document.getElementById("st-desc").value,link:document.getElementById("st-link").value};
+  data[i]={
+    title: document.getElementById("st-title").value,
+    description: document.getElementById("st-desc").value,
+    exercises: document.getElementById("st-exercises").value,
+    delivery: document.getElementById("st-delivery").value,
+    link: document.getElementById("st-link").value
+  };
   localStorage.setItem("gse.v3.stations",JSON.stringify(data));
   notify("Estación guardada ✓");
 }
@@ -3454,7 +3479,7 @@ function startLive(){if(S.livePlayers.length<2)return;S.pName=S.livePlayers[0];S
 // ===== PORTAL ALUMNO =====
 function vStudent(){
   return `<div>
-<style>#gemsEleBtn { display: none !important; }</style>
+
     <button class="back-link" onclick="goHome()">← Volver</button>
     <div class="student-portal">
       <img src="data:image/png;base64,${AGUILA_B64}" style="width:100px;height:100px;object-fit:contain;display:block;margin:0 auto 12px" alt="mascota">
@@ -4010,157 +4035,15 @@ function prepararEdicionNEE(id, titulo, tipo, original, adaptado) {
 </script>
 <script>
   // 1. Inyección de estilos de la interfaz pulida
-  const estilosGemsEle = `
-      #gemsEleBtn {
-          position: fixed;
-          bottom: 25px;
-          right: 25px;
-          width: 75px;  /* ¡Aumentado a 75px! */
-          height: 75px; /* ¡Aumentado a 75px! */
-          background: #233750; /* Tono de azul más claro y vivo */
-          border-radius: 50%;
-          border: 2px solid #55c7f8;
-          cursor: pointer;
-          z-index: 1000;
-          display: flex;
-          justify-content: center;
-          align-items: center;
-          box-shadow: 0 4px 15px rgba(0,0,0,0.3);
-          transition: all 0.3s ease;
-          animation: pulseGems 4s infinite;
-      }
-      
-      @keyframes pulseGems {
-          0% { box-shadow: 0 4px 15px rgba(85, 199, 248, 0.4); }
-          50% { box-shadow: 0 4px 20px rgba(85, 199, 248, 0.7); }
-          100% { box-shadow: 0 4px 15px rgba(85, 199, 248, 0.4); }
-      }
-
-      #gemsEleBtn:hover {
-          transform: scale(1.08) translateY(-5px);
-          background: #2c4463;
-      }
-
-      #gemsEleIcon {
-          width: 75%;
-          height: 75%;
-          transition: transform 0.3s ease;
-      }
-
-      #gemsEleBtn:hover #gemsEleIcon {
-          transform: rotate(-5deg);
-      }
-
-      #gemsEleChat {
-          display: none;
-          position: fixed;
-          bottom: 115px; /* Ajustado ligeramente por el tamaño del botón */
-          right: 25px;
-          width: 360px;
-          height: 550px;
-          background: #fff;
-          border-radius: 12px;
-          box-shadow: 0 5px 25px rgba(0,0,0,0.2);
-          z-index: 999;
-          overflow: hidden;
-          flex-direction: column;
-          border: 2px solid #344e70; /* Marco azul corregido (más claro) */
-          font-family: sans-serif;
-      }
-
-      #gemsEleChatHeader {
-          background: #344e70; /* Cabecera a juego con el marco claro */
-          color: #fff;
-          padding: 15px;
-          font-weight: 600;
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-      }
-      
-      #gemsEleChatHeader h3 { margin: 0; font-size: 16px; }
-      #closeChat { cursor: pointer; color: #ff6b6b; font-weight: bold; font-size: 20px; }
-      
-      /* Estilos comunes de botones de nivel */
-      .btn-nivel {
-          cursor: pointer; 
-          border: none; 
-          background: #55c7f8; 
-          color: #fff; 
-          border-radius: 4px; 
-          padding: 5px 10px; 
-          font-weight: bold;
-          font-size: 12px;
-          transition: background 0.2s;
-      }
-      .btn-nivel:hover { background: #3aaed8; }
-
-      /* Botón Adaptar NEE con el color arena de la paleta */
-      .btn-nee {
-          cursor: pointer; 
-          border: none; 
-          background: #caa43d; /* Tono arena exacto de VuelaEle */
-          color: #fff; 
-          border-radius: 4px; 
-          padding: 5px 12px; 
-          font-weight: bold;
-          font-size: 12px;
-          transition: background 0.2s;
-      }
-      .btn-nee:hover { background: #b59232; }
-  `;
   
-  const styleSheet = document.createElement("style");
-  styleSheet.type = "text/css";
-  styleSheet.innerText = estilosGemsEle;
-  document.head.appendChild(styleSheet);
 
   // 2. HTML con el nuevo Logo SVG ('G' elegante + alas finas) y la botonera solicitada
-  const htmlGemsEle = `
-      <div id="gemsEleBtn" onclick="toggleGemsChat()">
-          <svg id="gemsEleIcon" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <circle cx="50" cy="50" r="46" stroke="#55C7F8" stroke-width="1.5" stroke-dasharray="4 2" opacity="0.6"/>
-              
-              <path d="M22 42C12 48 16 58 26 60C36 62 44 56 46 50" stroke="#55C7F8" stroke-width="2.5" stroke-linecap="round"/>
-              <path d="M78 42C88 48 84 58 74 60C64 62 56 56 54 50" stroke="#55C7F8" stroke-width="2.5" stroke-linecap="round"/>
-              
-              <path d="M62 38C58 33 51 31 44 33C34 36 29 46 32 56C35 66 45 71 55 68C63 65 66 57 65 52H46" stroke="#FFD700" stroke-width="5.5" stroke-linecap="round" stroke-linejoin="round"/>
-          </svg>
-      </div>
-
-      <div id="gemsEleChat">
-          <div id="gemsEleChatHeader">
-              <h3>GemsELE - Asistente Pedagógico</h3>
-              <span id="closeChat" onclick="toggleGemsChat()">×</span>
-          </div>
-          <div style="padding: 10px; display: flex; gap: 6px; background: #f5f5f5; border-bottom: 1px solid #ddd; flex-wrap: wrap;">
-              <button onclick="enviarPlantilla('A1')" class="btn-nivel">A1</button>
-              <button onclick="enviarPlantilla('A2')" class="btn-nivel">A2</button>
-              <button onclick="enviarPlantilla('B1')" class="btn-nivel">B1</button>
-              <button onclick="enviarPlantilla('B2')" class="btn-nivel">B2</button>
-              <button onclick="enviarPlantilla('NEE')" class="btn-nee">Adaptar NEE</button>
-          </div>
-          <div id="chatMessages" style="flex: 1; padding: 15px; overflow-y: auto; background: #fafafa; font-size:14px;">
-              <p style="background: #e1f5fe; padding: 10px; border-radius: 8px; margin: 0 0 10px 0; color:#1a2a3d;">¡Hola! Qué bien sienta el descanso. He vuelto con un look totalmente renovado y listo para ponernos manos a la obra. ¿Qué nivel queremos dinamizar hoy?</p>
-          </div>
-          <div style="display: flex; padding: 10px; border-top: 1px solid #ddd; background:#fff;">
-              <input type="text" id="gemsInput" placeholder="Escribe tu consulta..." style="flex: 1; border: 1px solid #ccc; padding: 8px; border-radius: 4px; outline: none; font-size:14px;"/>
-              <button onclick="enviarMensajeManual()" style="cursor:pointer; margin-left: 10px; border: none; background: #344e70; color: #ffd700; border-radius: 4px; padding: 8px 15px; font-weight:bold;">Enviar</button>
-          </div>
-      </div>
-  `;
   
-  document.body.insertAdjacentHTML("beforeend", htmlGemsEle);
+  
+  
 
   // 3. Funciones lógicas del Chat
-  window.toggleGemsChat = function() {
-      const chat = document.getElementById("gemsEleChat");
-      if (chat.style.display === "none" || chat.style.display === "") {
-          chat.style.display = "flex";
-      } else {
-          chat.style.display = "none";
-      }
-  };
+  
 
   window.enviarPlantilla = function(tipo) {
       const msgBox = document.getElementById("chatMessages");
@@ -5218,6 +5101,17 @@ function gestionarBotonNube() {
   const selectorExistente = document.getElementById('selector-supervisora');
   
   if (S && S.mode === "profesor") {
+    // --- BOTÓN: GEMI (Asistente Pedagógico - Solo Profesor) ---
+    if (!document.getElementById('btn-gemi')) {
+      const btnGemi = document.createElement('button');
+      btnGemi.id = 'btn-gemi';
+      btnGemi.innerText = "✨ Gemi";
+      btnGemi.style = 'position:fixed; bottom:105px; left:25px; z-index:99999; background:#8e44ad; color:white; border:none; padding:14px 22px; border-radius:30px; font-weight:bold; cursor:pointer; box-shadow:0 6px 20px rgba(142,68,173,0.4); font-family:inherit; transition:0.3s; font-size:14px;';
+      btnGemi.onclick = () => {
+        abrirPanelGemi();
+      };
+      document.body.appendChild(btnGemi);
+    }
     if (botonExistente) return; // Si ya existen, no los volvemos a duplicar
     
     // BOTÓN 1: LA NUBE (Para guardar)
@@ -5276,9 +5170,134 @@ function gestionarBotonNube() {
     if (botonExistente) botonExistente.remove();
     if (botonSalirExistente) botonSalirExistente.remove();
     if (selectorExistente) selectorExistente.remove();
+    if (document.getElementById('btn-gemi')) document.getElementById('btn-gemi').remove();
   }
 }
 
+function abrirPanelGemi() {
+  if (document.getElementById('panel-gemi')) return;
+
+  // Crear el panel con diseño de chat
+  const panel = document.createElement('div');
+  panel.id = 'panel-gemi';
+  panel.style = 'position:fixed; bottom:165px; left:25px; width:380px; height:500px; max-width:90vw; background:white; z-index:100000; border-radius:20px; box-shadow:0 10px 30px rgba(0,0,0,0.3); padding:15px; border:2px solid #8e44ad; display:flex; flex-direction:column; font-family:inherit;';
+
+  // Interfaz de Chat
+  panel.innerHTML = `
+    <style>
+      #gemi-chat-messages::-webkit-scrollbar { width: 4px; }
+      #gemi-chat-messages::-webkit-scrollbar-track { background: transparent; }
+      #gemi-chat-messages::-webkit-scrollbar-thumb { background: #ddd; border-radius: 10px; }
+    </style>
+
+    <!-- Cabecera -->
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; border-bottom:1px solid #eee; padding-bottom:8px;">
+      <span style="font-weight:bold; color:#8e44ad; font-size:15px;">✨ Gemi - Asistente Pedagógico</span>
+      <button onclick="document.getElementById('panel-gemi').remove()" style="background:none; border:none; font-size:18px; cursor:pointer; color:#999; padding:0 5px;">✕</button>
+    </div>
+    
+    <!-- Historial de mensajes -->
+    <div id="gemi-chat-messages" style="flex-grow:1; overflow-y:auto; padding:5px; display:flex; flex-direction:column; gap:10px; margin-bottom:10px; font-size:13px; line-height:1.4;">
+      <div style="background:#f1f0f0; color:#333; padding:10px 14px; border-radius:15px 15px 15px 0px; align-self:flex-start; max-width:85%;">
+        ¡Hola, Azucena! Soy tu asistente de IA para <strong>VuelaEle</strong>. ¿En qué te puedo ayudar hoy con tus clases de español? 🚀
+      </div>
+    </div>
+    
+    <!-- Entrada de texto -->
+    <div style="display:flex; gap:8px; border-top:1px solid #eee; padding-top:10px;">
+      <input type="text" id="gemi-chat-input" placeholder="Escribe tu consulta pedagógica..." style="flex-grow:1; padding:10px 14px; border:1px solid #ddd; border-radius:20px; outline:none; font-size:13px;" onkeypress="if(event.key==='Enter') enviarMensajeGemi()">
+      <button onclick="enviarMensajeGemi()" style="background:#8e44ad; color:white; border:none; padding:8px 16px; border-radius:20px; cursor:pointer; font-weight:bold; font-size:13px; transition:0.2s;" onmouseover="this.style.background='#732d91'" onmouseout="this.style.background='#8e44ad'">Enviar</button>
+    </div>
+  `;
+
+  document.body.appendChild(panel);
+}
+// Función para gestionar los mensajes que envías
+window.enviarMensajeGemi = async function() {
+  const input = document.getElementById('gemi-chat-input');
+  const text = input.value.trim();
+  if (!text) return;
+
+  const messagesContainer = document.getElementById('gemi-chat-messages');
+
+  // 1. Añadir el mensaje de la profesora a la pantalla
+  const userMsg = document.createElement('div');
+  userMsg.style = 'background:#8e44ad; color:white; padding:10px 14px; border-radius:15px 15px 0px 15px; align-self:flex-end; max-width:85%; word-break:break-word;';
+  userMsg.textContent = text;
+  messagesContainer.appendChild(userMsg);
+  
+  // Limpiar el campo de texto y hacer scroll hacia abajo
+  input.value = '';
+  messagesContainer.scrollTop = messagesContainer.scrollHeight;
+
+  // 2. Añadir globo de "pensando..."
+  const tempMsg = document.createElement('div');
+  tempMsg.style = 'background:#f1f0f0; color:#666; padding:10px 14px; border-radius:15px 15px 15px 0px; align-self:flex-start; max-width:85%; font-style:italic;';
+  tempMsg.textContent = 'Gemi está pensando...';
+  messagesContainer.appendChild(tempMsg);
+  messagesContainer.scrollTop = messagesContainer.scrollHeight;
+
+  // 3. Obtener respuesta inteligente
+  try {
+    const respuesta = await obtenerRespuestaAI(text);
+    tempMsg.style.fontStyle = 'normal';
+    tempMsg.style.color = '#333';
+    tempMsg.innerHTML = respuesta;
+  } catch (error) {
+    tempMsg.textContent = "Lo siento, ha habido un problema al conectar con tu asistente.";
+  }
+  messagesContainer.scrollTop = messagesContainer.scrollHeight;
+}
+
+// Motor de respuestas (Simulador inteligente / API real)
+window.obtenerRespuestaAI = async function(mensaje) {
+  // 🔑 Si tienes una API Key de Google AI Studio, puedes cambiar el texto de abajo por tu clave
+  const apiKey = "AQ.Ab8RN6J5TRf7i6nbW1wYYlSYgkwnL9ywJ6_ByoEhsZvWldooGw";
+  if (apiKey === "TU_API_KEY_AQUÍ") {
+    return await simularRespuestaGemi(mensaje);
+  }
+
+  try {
+    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        contents: [{
+          parts: [{
+            text: "Eres Gemi, un asistente pedagógico experto en gamificación y didáctica de español como lengua extranjera (ELE) integrado en la app VuelaEle. Responde siempre de forma motivadora, directa, estructurada y muy práctica para un docente. Mantén tus respuestas relativamente cortas. Mensaje del usuario: " + mensaje
+          }]
+        }]
+      })
+    });
+    const data = await response.json();
+    if (data.candidates && data.candidates[0].content.parts[0].text) {
+      let text = data.candidates[0].content.parts[0].text;
+      // Formatear asteriscos de Markdown a negritas HTML y saltos de línea
+      text = text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+      text = text.replace(/\n/g, '<br>');
+      return text;
+    }
+    throw new Error();
+  } catch (e) {
+    return "No he podido conectar con mi cerebro de Inteligencia Artificial. Por favor, comprueba que tu API Key en el código sea correcta.";
+  }
+}
+
+// Simulador local por si juegas sin conexión o sin API Key
+function simularRespuestaGemi(mensaje) {
+  return new Promise(resolve => {
+    setTimeout(() => {
+      const msgLower = mensaje.toLowerCase();
+      if (msgLower.includes("juego") || msgLower.includes("gamifica") || msgLower.includes("dinamica")) {
+        resolve("<strong>¡Gran idea, Azucena!</strong> 🎲<br>Para dinamizar tu clase de español, te sugiero crear un <em>'Pasapalabra'</em> rápido de verbos irregulares o un reto cooperativo por equipos. ¿Qué tema o vocabulario estás trabajando ahora?");
+      } else if (msgLower.includes("flipped") || msgLower.includes("invertida") || msgLower.includes("preparar")) {
+        resolve("<strong>¡Excelente enfoque pedagógico!</strong> 📚<br>En una <em>Clase Invertida</em>, es ideal asignarles un video muy corto o un juego interactivo en casa para que en el aula aprovechemos el tiempo debatiendo y creando. ¿Para qué nivel necesitas estructurar la sesión?");
+      } else {
+        resolve("<strong>¡Entendido!</strong> 🧠💡<br>Tomo nota de tu propuesta. Para desbloquear todo mi potencial de Inteligencia Artificial real en directo, solo tienes que pegar tu <strong>API Key de Google AI Studio</strong> en la función <em>obtenerRespuestaAI</em> de tu código. Mientras tanto, ¡pregúntame lo que quieras!");
+      }
+    }, 1000);
+  });
+}
 // 2. FUNCIÓN PARA HACER LA LIMPIEZA DE SESIÓN (La cerradura segura)
 function cerrarSesionProfesor() {
   // Borramos las credenciales guardadas en la memoria del navegador
