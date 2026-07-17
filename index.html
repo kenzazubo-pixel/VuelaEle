@@ -5150,37 +5150,28 @@ function guardarEnNube() {
   // Si no hay sesión iniciada, obligamos a iniciarla antes de guardar
   if (!JSONBIN_BIN_ID) {
     const loginExitoso = iniciarSesionProfesor();
-    if (!loginExitoso) return; // Si cancela o falla, detenemos el guardado
-  }
-
-  if (!JSONBIN_API_KEY) {
-    alert("Falta la clave maestra de la base de datos.");
-    return;
+    if (!loginExitoso) return; 
   }
 
   const boton = document.getElementById('btn-cloud-sync');
   if (boton) boton.innerText = "⏳ Guardando...";
 
-  fetch(`https://api.jsonbin.io/v3/b/${JSONBIN_BIN_ID}`, {
+  // Conectamos directamente con vuestro nuevo almacén de Firebase
+  fetch('https://vuelaele-b2a0d-default-rtdb.firebaseio.com/vuelaele_data.json', {
     method: "PUT",
     headers: {
-      "Content-Type": "application/json",
-      "X-Master-Key": JSONBIN_API_KEY
+      "Content-Type": "application/json"
     },
-    body: JSON.stringify(S) // Enviamos el estado de la aplicación
+    body: JSON.stringify(S) // Enviamos el estado de la aplicación con todos los ejercicios
   })
   .then(res => {
-    if (!res.ok) throw new Error("Error en la respuesta del servidor");
-    return res.json();
-  })
-  .then(data => {
-    alert("✨ ¡Datos guardados con éxito en tu nube!");
-    if (boton) boton.innerText = "☁ Nube";
+    if (!res.ok) throw new Error("Error en el servidor de Firebase");
+    if (boton) boton.innerText = "💾 Guardado";
   })
   .catch(err => {
     console.error(err);
-    alert("❌ Error al guardar en la nube. Revisa la consola.");
-    if (boton) boton.innerText = "☁ Nube";
+    if (boton) boton.innerText = "❌ Error";
+    alert("Hubo un problema al guardar el trabajo en la nube.");
   });
 }
 
