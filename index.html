@@ -8,6 +8,48 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Kalam:wght@400;700&family=Montserrat:wght@400;600;700;800&display=swap" rel="stylesheet">
 <style>
+  .modal-vuelaele {
+    position: fixed;
+    top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(15, 23, 42, 0.85);
+    display: flex; justify-content: center; align-items: center;
+    z-index: 9999;
+}
+.modal-contenido {
+    background: #1e293b;
+    border: 2px solid #a855f7;
+    border-radius: 12px; padding: 25px; width: 450px; color: #fff;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+}
+.modal-contenido h3 { color: #facc15; margin-top: 0; }
+.modal-contenido label { display: block; margin: 12px 0 6px; font-size: 14px; color: #cbd5e1; }
+.modal-contenido input, .modal-contenido select, .modal-contenido textarea {
+    width: 100%; padding: 10px; background: #0f172a; border: 1px solid #475569;
+    border-radius: 6px; color: #fff; font-size: 14px; box-sizing: border-box;
+}
+.modal-botones { display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px; }
+.btn-cancelar { background: #ef4444; color: white; border: none; padding: 10px 15px; border-radius: 6px; cursor: pointer; }
+.btn-guardar { background: #22c55e; color: white; border: none; padding: 10px 15px; border-radius: 6px; cursor: pointer; font-weight: bold; }
+
+.modal-contenido-visor {
+    background: #1e293b; border: 2px solid #facc15; border-radius: 12px;
+    width: 90%; height: 85%; display: flex; flex-direction: column; overflow: hidden;
+}
+.visor-cabecera { background: #0f172a; padding: 15px; display: flex; justify-content: space-between; align-items: center; color: white; }
+.visor-cabecera h4 { margin: 0; color: #facc15; }
+.btn-cerrar-visor { background: none; border: none; color: #ef4444; font-size: 16px; cursor: pointer; font-weight: bold; }
+.visor-cuerpo { flex: 1; width: 100%; height: 100%; background: #fff; }
+.visor-cuerpo iframe { width: 100%; height: 100%; border: none; }
+
+.tarjeta-acciones {
+    display: flex; gap: 8px; justify-content: flex-end; margin-top: 10px;
+    padding-top: 8px; border-top: 1px solid #334155;
+}
+.btn-accion-tarjeta {
+    background: #0f172a; border: 1px solid #475569; border-radius: 4px;
+    color: #fff; cursor: pointer; padding: 4px 8px; font-size: 14px; transition: 0.2s;
+}
+.btn-accion-tarjeta:hover { background: #a855f7; border-color: #a855f7; }
 
   /* ==========================================================================
      1. TÍTULOS PRINCIPALES (Lila Grande y Claro: Prepara, Biblioteca, Gestión...)
@@ -1074,7 +1116,7 @@ function vInfogBank(){
           `).join('')}
         </div>
         
-        <label style="background:#58CC02; color:#fff; font-weight:bold; padding:8px 16px; border-radius:8px; cursor:pointer; font-size:13px; display:inline-block; transition:transform 0.2s; font-family: 'Montserrat', sans-serif !important;" onmouseover="this.style.transform='scale(1.03)'" onmouseout="this.style.transform='scale(1)'">
+        <label style="background:#58CC02; color:#fff; font-weight:bold; padding:8px 16px; border-radius:8px; cursor:pointer; font-size:13px; display:inline-block; transition:transform 0.2s; font-family: 'Montserrat', sans-serif !important;" onmouseover="this.style.transform='scale(1.03)'" onmouseout="this.style.transform='scale(1)'"onclick="abrirModalRecurso(); event.preventDefault();">
           📤 Subir Ficha / Captura
           <input type="file" accept="application/pdf, image/*" style="display:none;" onchange="procesarSubidaFicha(this)">
         </label>
@@ -5418,6 +5460,173 @@ function cerrarSesionProfesor() {
 
 setInterval(gestionarBotonNube, 1000);
 setTimeout(cargarDesdeNube, 600);
+  </script>
+  <!-- MODAL: FORMULARIO DE NUEVO RECURSO UNIVERSAL -->
+<div id="modal-recurso" class="modal-vuelaele" style="display: none;">
+  <div class="modal-contenido">
+      <h3>✨ Añadir Nuevo Recurso</h3>
+      
+      <label for="recurso-titulo">Título del recurso:</label>
+      <input type="text" id="recurso-titulo" placeholder="Ej: El verbo ESTAR con profeGemi">
+
+      <label for="recurso-nivel">Nivel pedagógico:</label>
+      <select id="recurso-nivel">
+          <option value="A1">A1</option>
+          <option value="A2">A2</option>
+          <option value="B1">B1</option>
+          <option value="B2">B2</option>
+          <option value="C1">C1</option>
+          <option value="C2">C2</option>
+      </select>
+
+      <label for="recurso-tipo">Tipo de recurso:</label>
+      <select id="recurso-tipo" onchange="cambiarTipoRecurso()">
+          <option value="archivo">📁 Archivo Local (.html, .pdf, .jpg, .png)</option>
+          <option value="enlace">🔗 Enlace Web / URL (Wordwall, YouTube, etc.)</option>
+          <option value="iframe">💻 Código de Incrustación / Iframe (Genially, H5P)</option>
+      </select>
+
+      <!-- Zonas dinámicas según lo que elija la profe -->
+      <div id="zona-archivo" class="zona-input-recurso">
+          <label for="recurso-file">Selecciona el archivo de tu Mac:</label>
+          <input type="file" id="recurso-file" accept=".html,.pdf,.jpg,.jpeg,.png">
+      </div>
+
+      <div id="zona-enlace" class="zona-input-recurso" style="display: none;">
+          <label for="recurso-url">Pega la URL o enlace web:</label>
+          <input type="url" id="recurso-url" placeholder="https://wordwall.net/play/...">
+      </div>
+
+      <div id="zona-iframe" class="zona-input-recurso" style="display: none;">
+          <label for="recurso-code">Pega el código iframe completo:</label>
+          <textarea id="recurso-code" rows="4" placeholder="<iframe src='...'></iframe>"></textarea>
+      </div>
+
+      <div class="modal-botones">
+          <button class="btn-cancelar" onclick="cerrarModalRecurso()">Cancelar</button>
+          <button class="btn-guardar" onclick="guardarRecursoUniversal()">Guardar Recurso</button>
+      </div>
+  </div>
+</div>
+
+<!-- MODAL: VISOR / INCRUSTADOR DE RECURSOS -->
+<div id="modal-visor" class="modal-vuelaele" style="display: none;">
+  <div class="modal-contenido-visor">
+      <div class="visor-cabecera">
+          <h4 id="visor-titulo">Visualizando Recurso</h4>
+          <button class="btn-cerrar-visor" onclick="cerrarVisor()">❌ Cerrar</button>
+      </div>
+      <div id="visor-cuerpo">
+          <!-- Aquí se meterá el HTML, Iframe o PDF dinámicamente -->
+      </div>
+  </div>
+</div>
+<script>
+  // Array global para tus recursos (se conecta con tu localStorage)
+  let bancoRecursos = JSON.parse(localStorage.getItem('vuelaele_recursos')) || [];
+  
+  // 1. ABRIRE Y CERRAR EL FORMULARIO
+  function abrirModalRecurso() {
+      document.getElementById('modal-recurso').style.display = 'flex';
+  }
+  function cerrarModalRecurso() {
+      document.getElementById('modal-recurso').style.display = 'none';
+  }
+  
+  // Cambia los campos según lo que elijas (archivo, enlace o iframe)
+  function cambiarTipoRecurso() {
+      const tipo = document.getElementById('recurso-tipo').value;
+      document.getElementById('zona-archivo').style.display = tipo === 'archivo' ? 'block' : 'none';
+      document.getElementById('zona-enlace').style.display = tipo === 'enlace' ? 'block' : 'none';
+      document.getElementById('zona-iframe').style.display = tipo === 'iframe' ? 'block' : 'none';
+  }
+  
+  // 2. GUARDAR EL RECURSO
+  function guardarRecursoUniversal() {
+      const titulo = document.getElementById('recurso-titulo').value.trim();
+      const nivel = document.getElementById('recurso-nivel').value;
+      const tipo = document.getElementById('recurso-tipo').value;
+  
+      if (!titulo) { alert("Por favor, ponle un título al recurso."); return; }
+  
+      let nuevoRecurso = { id: Date.now(), titulo: titulo, nivel: nivel, tipo: tipo };
+  
+      if (tipo === 'enlace') {
+          nuevoRecurso.contenido = document.getElementById('recurso-url').value.trim();
+          finalizarGuardado(nuevoRecurso);
+      } else if (tipo === 'iframe') {
+          nuevoRecurso.contenido = document.getElementById('recurso-code').value.trim();
+          finalizarGuardado(nuevoRecurso);
+      } else if (tipo === 'archivo') {
+          const fileInput = document.getElementById('recurso-file');
+          if (fileInput.files.length === 0) { alert("Selecciona un archivo primero."); return; }
+          
+          const file = fileInput.files[0];
+          const reader = new FileReader();
+          
+          reader.onload = function(e) {
+              nuevoRecurso.contenido = e.target.result; // Guarda el archivo de tu Mac en la memoria
+              nuevoRecurso.nombreArchivo = file.name;
+              finalizarGuardado(nuevoRecurso);
+          };
+          reader.readAsDataURL(file);
+      }
+  }
+  
+  function finalizarGuardado(recurso) {
+      bancoRecursos.push(recurso);
+      localStorage.setItem('vuelaele_recursos', JSON.stringify(bancoRecursos));
+      cerrarModalRecurso();
+      alert("¡Recurso añadido! Recuerda pulsar el botón ☁️ Nube para asegurar la copia.");
+      // Aquí puedes añadir tu función actual para refrescar las tarjetas si ves que no aparecen solas
+  }
+  
+  // 3. ACCIONES DE LAS TARJETAS (Ver, Compartir, Descargar, Borrar)
+  function accionIncrustar(id) {
+      const rec = bancoRecursos.find(r => r.id === id);
+      const cuerpoVisor = document.getElementById('visor-cuerpo');
+      document.getElementById('visor-titulo').innerText = rec.titulo;
+  
+      if (rec.tipo === 'enlace' || rec.tipo === 'archivo') {
+          cuerpoVisor.innerHTML = `<iframe src="${rec.contenido}"></iframe>`;
+      } else if (rec.tipo === 'iframe') {
+          cuerpoVisor.innerHTML = rec.contenido;
+      }
+      document.getElementById('modal-visor').style.display = 'flex';
+  }
+  
+  function cerrarVisor() {
+      document.getElementById('visor-cuerpo').innerHTML = '';
+      document.getElementById('modal-visor').style.display = 'none';
+  }
+  
+  function accionCompartir(id) {
+      const rec = bancoRecursos.find(r => r.id === id);
+      navigator.clipboard.writeText(rec.contenido).then(() => {
+          alert("¡Enlace copiado al portapapeles! Ya puedes pasárselo a tus compañeras.");
+      });
+  }
+  
+  function accionDescargar(id) {
+      const rec = bancoRecursos.find(r => r.id === id);
+      if(rec.tipo !== 'archivo') return;
+  
+      const enlace = document.createElement('a');
+      enlace.href = rec.contenido;
+      enlace.download = rec.nombreArchivo || 'recurso.html';
+      document.body.appendChild(enlace);
+      enlace.click();
+      document.body.removeChild(enlace);
+  }
+  
+  function accionBorrar(id) {
+      if(confirm("¿Quieres eliminar este recurso?")) {
+          bancoRecursos = bancoRecursos.filter(r => r.id !== id);
+          localStorage.setItem('vuelaele_recursos', JSON.stringify(bancoRecursos));
+          // Aquí puedes llamar a tu función de refrescar tarjetas
+          location.reload(); // Esto recarga la página para mostrar los cambios al instante
+      }
+  }
   </script>
 </body>
 </html>
