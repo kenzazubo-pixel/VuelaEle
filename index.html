@@ -1093,8 +1093,14 @@ function vInfogBank(){
       };
 
       if (!S.infographies) S.infographies = [];
-      S.infographies.push(nuevaFicha);
-      localStorage.setItem("gse.v3.infographies", JSON.stringify(S.infographies));
+    S.infographies.push(nuevaFicha);
+    
+    // Guardamos en local (como ya tenías)
+    localStorage.setItem("gse.v3.infographies", JSON.stringify(S.infographies));
+    
+    // ¡LAS DOS LÍNEAS MÁGICAS!
+    guardarEnNube(); // 1. Mandamos el archivo a Firebase
+    if (typeof render === "function") render(); // 2. Dibujamos el nuevo cuadrito en pantalla 
 
       alert("¡Ficha guardada con éxito en el banco!");
       if (typeof render === 'function') render();
@@ -5184,6 +5190,7 @@ function cargarDesdeNube() {
       // Cargamos los datos de las actividades y clases
       S.activities = data.activities || [];
       S.classes = data.classes || [];
+      S.infographies = data.infographies || [];
       
       // FORZAMOS EL REPINTADO:
       // A veces, al cargar, hay que avisar a la app de que los datos cambiaron
