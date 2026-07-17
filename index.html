@@ -5177,41 +5177,34 @@ function guardarEnNube() {
 
 // 3. FUNCIÓN PARA CARGAR LOS DATOS DESDE INTERNET
 function cargarDesdeNube() {
-  // Si no hay sesión iniciada, la pedimos para saber de qué "caja" descargar los datos
+  // Si no hay sesión iniciada, la pedimos
   if (!JSONBIN_BIN_ID) {
     const loginExitoso = iniciarSesionProfesor();
     if (!loginExitoso) return;
   }
 
-  if (!JSONBIN_API_KEY) return;
-
-  fetch(`https://api.jsonbin.io/v3/b/${JSONBIN_BIN_ID}/latest`, {
-    method: "GET",
-    headers: {
-      "X-Master-Key": JSONBIN_API_KEY
-    }
-  })
+  // Llamamos a vuestro nuevo almacén de Firebase
+  fetch('https://vuelaele-b2a0d-default-rtdb.firebaseio.com/vuelaele_data.json')
   .then(res => {
-    if (!res.ok) throw new Error("No se pudo descargar");
+    if (!res.ok) throw new Error("No se pudo descargar de Firebase");
     return res.json();
   })
   .then(data => {
-    // Si la nube está vacía pero tiene estructura sana, o tiene datos
-    if (data.record) {
-      // Fusionamos los datos de la nube en la variable S
-      S.activities = data.record.activities || [];
-      S.classes = data.record.classes || [];
+    if (data) {
+      // Firebase guarda los datos directos, ya no hace falta usar ".record"
+      S.activities = data.activities || [];
+      S.classes = data.classes || [];
       
-      console.log("☁ Datos de la nube cargados y sincronizados para el usuario.");
-      
-      // Si existe la función para pintar la pantalla en tu app, la ejecutamos
+      // Ejecutamos la función para pintar las fichas en la pantalla
       if (typeof render === "function") {
         render();
       }
+      
+      console.log("Datos cargados desde Firebase con éxito.");
     }
   })
   .catch(err => {
-    console.error("Error al cargar de la nube:", err);
+    console.error("Error al cargar:", err);
   });
 }
 
