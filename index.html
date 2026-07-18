@@ -4116,7 +4116,19 @@ function verificarAccesoProfesor() {
     document.getElementById('cancel-vuela').onclick = () => overlay.remove();
     document.getElementById('pass-vuela').onkeydown = (e) => { if (e.key === 'Enter') validarCodigo(); };
 }
-
+function guardarEnNube() {
+  fetch('https://vuelaele-b2a0d-default-rtdb.firebaseio.com/vuelaele_data.json', {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      activities: S.activities || [],
+      classes: S.classes || [],
+      infographies: S.infographies || []
+    })
+  })
+  .then(() => console.log("¡Sincronización con Firebase correcta!"))
+  .catch(err => console.error("Error al sincronizar:", err));
+}
 // GESTOR DE DATOS PARA MATERIALES ADAPTADOS NEE
 function guardarRecursoNEE(neeId, id = null) {
   if (!S.nee_materiales) S.nee_materiales = {};
