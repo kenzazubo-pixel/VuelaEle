@@ -1092,7 +1092,6 @@ function vInfogBank(){
         if (!S.infographies) S.infographies = [];
         S.infographies.push(nuevaFicha);
         
-        localStorage.setItem("gse.v3.infographies", JSON.stringify(S.infographies));
         guardarEnNube();
         if (typeof render === "function") render();
         
@@ -1300,7 +1299,6 @@ function toggleFullscreen(){
 function eliminarFicha(idx){
   if(!confirm("¿Eliminar esta ficha?")) return;
   S.infographies.splice(idx,1);
-  save(); // Mantenemos el guardado local por si acaso
   guardarEnNube(); // ¡Avisamos a Firebase de que la hemos borrado!
   notify("Ficha eliminada");
   render();
