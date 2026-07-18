@@ -1082,26 +1082,23 @@ function vInfogBank(){
 
     const reader = new FileReader();
     reader.onload = (e) => {
-      const nuevaFicha = {
-        id: "ficha_" + Date.now(),
-        title: titlePrompt,
-        level: finalLevel,
-        file: e.target.result // Base64 del archivo (sea PDF o Imagen)
-      };
+        const nuevaFicha = {
+            id: "ficha_" + Date.now(),
+            title: titlePrompt,
+            level: finallevel,
+            file: e.target.result
+        };
 
-      if (!S.infographies) S.infographies = [];
-    S.infographies.push(nuevaFicha);
-    
-    // Guardamos en local (como ya tenías)
-    localStorage.setItem("gse.v3.infographies", JSON.stringify(S.infographies));
-    
-    // ¡LAS DOS LÍNEAS MÁGICAS!
-    guardarEnNube(); // 1. Mandamos el archivo a Firebase
-    if (typeof render === "function") render(); // 2. Dibujamos el nuevo cuadrito en pantalla 
-
-      alert("¡Ficha guardada con éxito en el banco!");
-      if (typeof render === 'function') render();
+        if (!S.infographies) S.infographies = [];
+        S.infographies.push(nuevaFicha);
+        
+        localStorage.setItem("gse.v3.infographies", JSON.stringify(S.infographies));
+        guardarEnNube();
+        if (typeof render === "function") render();
+        
+        alert("¡Ficha guardada con éxito en el banco!");
     };
+
     reader.readAsDataURL(file);
   };
 
