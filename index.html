@@ -5558,12 +5558,27 @@ setTimeout(cargarDesdeNube, 600);
   }
   
   function finalizarGuardado(recurso) {
-      bancoRecursos.push(recurso);
-      guardarEnNube();
-      cerrarModalRecurso();
-      render();
-      alert("¡Recurso añadido! Recuerda pulsar el botón ☁️ Nube para asegurar la copia.");
-  }
+  // 1. Lo dejamos en el cajón nuevo (por si Firebase lo necesita)
+  bancoRecursos.push(recurso);
+
+  // 2. ¡EL PUENTE MÁGICO! Lo metemos en tu cajón antiguo para que dibuje las tarjetas de siempre
+  if (!S.infographies) S.infographies = [];
+  S.infographies.push({
+    id: recurso.id || "ficha_" + Date.now(),
+    title: recurso.titulo || "Nueva Ficha",
+    level: recurso.nivel || "Todos",
+    file: recurso.contenido // Aquí va la imagen, PDF o enlace
+  });
+
+  // 3. Enviamos a la nube y cerramos la ventana
+  guardarEnNube();
+  cerrarModalRecurso();
+  
+  // 4. ¡Damos la orden a los pinceles para que dibujen las tarjetas!
+  if (typeof render === "function") render();
+  
+  alert("¡Recurso guardado! Ya deberían salir tus tarjetas de siempre.");
+}
   
   // 3. ACCIONES DE LAS TARJETAS (Ver, Compartir, Descargar, Borrar)
   function accionIncrustar(id) {
