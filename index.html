@@ -5559,7 +5559,7 @@ setTimeout(cargarDesdeNube, 600);
   
   function finalizarGuardado(recurso) {
       bancoRecursos.push(recurso);
-      localStorage.setItem('vuelaele_recursos', JSON.stringify(bancoRecursos));
+      guardarEnNube();
       cerrarModalRecurso();
       alert("¡Recurso añadido! Recuerda pulsar el botón ☁️ Nube para asegurar la copia.");
       // Aquí puedes añadir tu función actual para refrescar las tarjetas si ves que no aparecen solas
