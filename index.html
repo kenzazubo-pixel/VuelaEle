@@ -1031,33 +1031,73 @@ function vInfogBank(){
   };
 
   // Función interna para abrir el visor con una sola ficha (detectando si es PDF o Imagen)
-  window.abrirVisorFicha = (idFicha) => {
-  const ficha = S.infographies.find(f => f.id === idFicha);
-  if (!ficha || !ficha.file) return;
+  // 1. Funciona para VER la ficha
+window.abrirVisorFicha = (idFicha) => {
+  const ficha = (S.infographies || []).find(f => f.id === idFicha);
+  if (!ficha || !ficha.file) {
+    alert("No se pudo encontrar el archivo de esta ficha.");
+    return;
+  }
   const fileData = ficha.file;
-
   let contenido = '';
-  const esPdf = fileData.startsWith("data:application/pdf") || fileData.includes(".pdf");
+  
+  const esPdf = fileData.startsWith("data:application/pdf") || fileData.toLowerCase().includes(".pdf");
   const esImagen = fileData.startsWith("data:image/") || fileData.match(/\.(jpeg|jpg|gif|png|webp)/i);
 
-  if (esPdf || fileData.includes(".html") || fileData.startsWith("http")) {
-    contenido = `<iframe src="${fileData}" style="width:100%; max-width:900px; height:80vh; border:none; border-radius:12px; background:#fff;"></iframe>`;
-  } else if (esImagen) {
-    contenido = `<div style="max-width:100%; max-height:80vh; overflow:auto; border-radius:12px; background:#1a2a3d; padding:10px; display:flex; justify-content:center;"><img src="${fileData}" style="max-width:100%; object-fit:contain; border-radius:8px;"></div>`;
+  if (esImagen) {
+    contenido = `<div style="max-width:100%; max-height:80vh; overflow:auto; border-radius:12px; background:#1a2a3d; padding:10px; display:flex; justify-content:center;"><img src="${fileData}" style="max-width:100%; max-height:75vh; object-fit:contain; border-radius:8px;"></div>`;
   } else {
     contenido = `<iframe src="${fileData}" style="width:100%; max-width:900px; height:80vh; border:none; border-radius:12px; background:#fff;"></iframe>`;
   }
+
+  const viejo = document.getElementById("vuelaele-modal-visor");
+  if (viejo) viejo.remove();
 
   const modal = document.createElement("div");
   modal.id = "vuelaele-modal-visor";
   modal.style = "position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(15,28,46,0.95); z-index:99999; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:20px; box-sizing:border-box;";
 
-  const btnCerrar = `<button onclick="document.getElementById('vuelaele-modal-visor').remove()" style="margin-top:20px; padding:10px 20px; background:#ff4b4b; color:white; border:none; border-radius:8px; cursor:pointer; font-weight:bold; font-size:16px;">Cerrar</button>`;
+  const btnCerrar = `<button onclick="document.getElementById('vuelaele-modal-visor').remove()" style="margin-top:20px; padding:10px 25px; background:#ff4b4b; color:white; border:none; border-radius:8px; cursor:pointer; font-weight:bold; font-size:16px;">Cerrar</button>`;
 
   modal.innerHTML = contenido + btnCerrar;
   document.body.appendChild(modal);
 };
 
+// 2. Función para DESCARGAR la ficha
+window.descargarFicha = (idFicha) => {
+  const ficha = (S.infographies || []).find(f => f.id === idFicha);
+  if (!ficha || !ficha.file) return;
+
+  const link = document.createElement("a");
+  link.href = ficha.file;
+  
+  let ext = ".png";
+  if (ficha.file.includes("pdf")) ext = ".pdf";
+  else if (ficha.file.includes("html")) ext = ".html";
+  
+  const nombreLimpio = (ficha.title || "ficha").replace(/[^a-z0-9_-]/gi, '_');
+  link.download = nombreLimpio + ext;
+  
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+};
+
+// 3. Función para COMPARTIR / COPIAR enlace
+window.compartirFicha = (idFicha) => {
+  const ficha = (S.infographies || []).find(f => f.id === idFicha);
+  if (!ficha || !ficha.file) return;
+
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(ficha.file).then(() => {
+      alert("¡Enlace o contenido copiado al portapapeles!");
+    }).catch(() => {
+      alert("No se pudo copiar automáticamente.");
+    });
+  } else {
+    alert("Función de copiado no disponible en este navegador.");
+  }
+};
   // Función interna para eliminar la ficha del array global
   window.eliminarFichaBank = (id, event, title) => {
     event.stopPropagation(); // Evita que se abra el visor al hacer clic en borrar
@@ -1159,11 +1199,12 @@ function vInfogBank(){
       </h4>
 
       <!-- Botonera de acciones completa -->
+      <!-- Botonera de acciones completa y funcional -->
       <div style="display:flex; justify-content:space-around; align-items:center; border-top:1px solid rgba(255,255,255,0.1); padding-top:10px; margin-top:8px;">
-        <button onclick="window.abrirVisorFicha('${i.id}')" title="Ver" style="background:none; border:none; color:#4299e1; cursor:pointer; font-size:18px;">👁️</button>
-        <a href="${i.file}" download="${i.title || 'ficha'}" title="Descargar" style="color:#48bb78; text-decoration:none; font-size:18px;">📥</a>
-        <button onclick="navigator.clipboard.writeText('${i.file}'); alert('¡Enlace copiado!')" title="Compartir" style="background:none; border:none; color:#ed8936; cursor:pointer; font-size:18px;">🔗</button>
-        <button onclick="window.eliminarFichaBank('${i.id}', event, '${i.title}')" title="Borrar" style="background:none; border:none; color:#f56565; cursor:pointer; font-size:18px;">🗑️</button>
+        <button onclick="event.stopPropagation(); window.abrirVisorFicha('${i.id}')" title="Ver" style="background:none; border:none; color:#4299e1; cursor:pointer; font-size:20px;">👁️</button>
+        <button onclick="event.stopPropagation(); window.descargarFicha('${i.id}')" title="Descargar" style="background:none; border:none; color:#48bb78; cursor:pointer; font-size:20px;">📥</button>
+        <button onclick="event.stopPropagation(); window.compartirFicha('${i.id}')" title="Copiar / Compartir" style="background:none; border:none; color:#ed8936; cursor:pointer; font-size:20px;">🔗</button>
+        <button onclick="event.stopPropagation(); window.eliminarFichaBank('${i.id}', event, '${(i.title || '').replace(/'/g, "\\'")}')" title="Borrar" style="background:none; border:none; color:#f56565; cursor:pointer; font-size:20px;">🗑️</button>
       </div>
     </div>
   `;
