@@ -1100,15 +1100,38 @@ window.compartirFicha = (idFicha) => {
 
 // 4. BORRAR FICHA
 window.eliminarFichaBank = (id, event, title) => {
-  if (event) event.stopPropagation();
-  const nombre = title || "esta ficha";
-  if (!confirm(`¿Estás segura de que deseas eliminar "${nombre}"?`)) return;
+  // 1. Frenamos el clic para que no se abra la ficha por accidente al intentar borrarla
+  if (event) {
+    event.stopPropagation();
+    event.preventDefault();
+  }
 
-  S.infographies = (S.infographies || []).filter(i => String(i.id) !== String(id));
-  localStorage.setItem("gse.v3.infographies", JSON.stringify(S.infographies));
+  // 2. Preguntamos confirmación para evitar sustos
+  const nombreFicha = title || "este recurso";
+  if (!confirm(`¿Seguro que quieres enviar "${nombreFicha}" a la papelera?`)) {
+    return; // Si le das a cancelar, no hace nada
+  }
+
+  // 3. Borramos el archivo de la lista (usamos String para que no haya errores de formato al buscarlo)
+  if (S && S.infographies) {
+    S.infographies = S.infographies.filter(i => String(i.id) !== String(id));
+  }
+
+  // 4. Guardamos la limpieza en la memoria de la app
+  localStorage.setItem("gse.v3.infographies", JSON.stringify(S.infographies || []));
   
-  if (typeof guardarEnNube === "function") guardarEnNube();
-  if (typeof render === "function") render();
+  // 5. Guardamos en la nube (si existe tu función para ello)
+  if (typeof guardarEnNube === "function") {
+    guardarEnNube();
+  }
+
+  // 6. Refrescamos la pantalla automáticamente para que desaparezca la tarjeta
+  if (typeof render === "function") {
+    render(); 
+  } else {
+    // Red de seguridad extrema por si 'render' no responde
+    window.location.reload();
+  }
 };
 
   // Manejador del botón de subir archivos (acepta PDF e Imágenes)
