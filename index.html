@@ -1031,18 +1031,20 @@ function vInfogBank(){
   };
 
   // Función interna para abrir el visor con una sola ficha (detectando si es PDF o Imagen)
-  // 1. Funciona para VER la ficha
+ // --- FUNCIONES DEL BANCO DE RECURSOS ---
+
+// 1. VER FICHA / JUEGO / ARCHIVO
 window.abrirVisorFicha = (idFicha) => {
-  const ficha = (S.infographies || []).find(f => f.id === idFicha);
-  if (!ficha || !ficha.file) {
-    alert("No se pudo encontrar el archivo de esta ficha.");
-    return;
-  }
-  const fileData = ficha.file;
-  let contenido = '';
+  const ficha = (S.infographies || []).find(f => String(f.id) === String(idFicha));
+  if (!ficha) return alert("No se encontró la ficha.");
   
-  const esPdf = fileData.startsWith("data:application/pdf") || fileData.toLowerCase().includes(".pdf");
-  const esImagen = fileData.startsWith("data:image/") || fileData.match(/\.(jpeg|jpg|gif|png|webp)/i);
+  // Acepta 'file', 'contenido' o 'url' para que funcionen fichas viejas y nuevas
+  const fileData = ficha.file || ficha.contenido || ficha.url || ficha.fileData;
+  if (!fileData) return alert("Esta ficha no tiene un archivo o contenido asociado.");
+
+  let contenido = '';
+  const str = String(fileData).toLowerCase();
+  const esImagen = str.startsWith("data:image/") || str.match(/\.(jpeg|jpg|gif|png|webp)/i);
 
   if (esImagen) {
     contenido = `<div style="max-width:100%; max-height:80vh; overflow:auto; border-radius:12px; background:#1a2a3d; padding:10px; display:flex; justify-content:center;"><img src="${fileData}" style="max-width:100%; max-height:75vh; object-fit:contain; border-radius:8px;"></div>`;
@@ -1063,53 +1065,51 @@ window.abrirVisorFicha = (idFicha) => {
   document.body.appendChild(modal);
 };
 
-// 2. Función para DESCARGAR la ficha
+// 2. DESCARGAR
 window.descargarFicha = (idFicha) => {
-  const ficha = (S.infographies || []).find(f => f.id === idFicha);
-  if (!ficha || !ficha.file) return;
+  const ficha = (S.infographies || []).find(f => String(f.id) === String(idFicha));
+  const fileData = ficha ? (ficha.file || ficha.contenido || ficha.url || ficha.fileData) : null;
+  if (!fileData) return alert("No hay archivo para descargar.");
 
   const link = document.createElement("a");
-  link.href = ficha.file;
-  
+  link.href = fileData;
   let ext = ".png";
-  if (ficha.file.includes("pdf")) ext = ".pdf";
-  else if (ficha.file.includes("html")) ext = ".html";
-  
-  const nombreLimpio = (ficha.title || "ficha").replace(/[^a-z0-9_-]/gi, '_');
+  const str = String(fileData).toLowerCase();
+  if (str.includes("pdf")) ext = ".pdf";
+  else if (str.includes("html")) ext = ".html";
+
+  const nombreLimpio = ((ficha.title || ficha.titulo || "ficha")).replace(/[^a-z0-9_-]/gi, '_');
   link.download = nombreLimpio + ext;
-  
   document.body.appendChild(link);
   link.click();
   link.remove();
 };
 
-// 3. Función para COMPARTIR / COPIAR enlace
+// 3. COMPARTIR / COPIAR ENLACE
 window.compartirFicha = (idFicha) => {
-  const ficha = (S.infographies || []).find(f => f.id === idFicha);
-  if (!ficha || !ficha.file) return;
+  const ficha = (S.infographies || []).find(f => String(f.id) === String(idFicha));
+  const fileData = ficha ? (ficha.file || ficha.contenido || ficha.url || ficha.fileData) : null;
+  if (!fileData) return alert("No hay enlace o contenido para copiar.");
 
   if (navigator.clipboard && navigator.clipboard.writeText) {
-    navigator.clipboard.writeText(ficha.file).then(() => {
-      alert("¡Enlace o contenido copiado al portapapeles!");
-    }).catch(() => {
-      alert("No se pudo copiar automáticamente.");
-    });
+    navigator.clipboard.writeText(fileData).then(() => alert("¡Enlace/contenido copiado!")).catch(() => alert("No se pudo copiar automáticamente."));
   } else {
     alert("Función de copiado no disponible en este navegador.");
   }
 };
-  // Función interna para eliminar la ficha del array global
-  window.eliminarFichaBank = (id, event, title) => {
-    event.stopPropagation(); // Evita que se abra el visor al hacer clic en borrar
-    if (confirm(`¿Estás segura de que deseas eliminar la ficha "${title}"?`)) {
-      S.infographies = S.infographies.filter(i => i.id !== id);
-      
-      // Intentamos guardar en localStorage el estado actualizado si usas persistencia
-      localStorage.setItem("gse.v3.infographies", JSON.stringify(S.infographies));
-      
-      if (typeof render === 'function') render();
-    }
-  };
+
+// 4. BORRAR FICHA
+window.eliminarFichaBank = (id, event, title) => {
+  if (event) event.stopPropagation();
+  const nombre = title || "esta ficha";
+  if (!confirm(`¿Estás segura de que deseas eliminar "${nombre}"?`)) return;
+
+  S.infographies = (S.infographies || []).filter(i => String(i.id) !== String(id));
+  localStorage.setItem("gse.v3.infographies", JSON.stringify(S.infographies));
+  
+  if (typeof guardarEnNube === "function") guardarEnNube();
+  if (typeof render === "function") render();
+};
 
   // Manejador del botón de subir archivos (acepta PDF e Imágenes)
   window.procesarSubidaFicha = (input) => {
