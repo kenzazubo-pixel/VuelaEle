@@ -1032,27 +1032,29 @@ function vInfogBank(){
 
   // Función interna para abrir el visor con una sola ficha (detectando si es PDF o Imagen)
   window.abrirVisorFicha = (idFicha) => {
-  // 1. Buscamos la ficha exacta en nuestra lista usando su ID
   const ficha = S.infographies.find(f => f.id === idFicha);
-  if (!ficha) return;
-
+  if (!ficha || !ficha.file) return;
   const fileData = ficha.file;
-  const esPdf = fileData.startsWith("data:application/pdf") || fileData.includes(".pdf");
 
-  // 2. Creamos el modal de fondo oscuro
+  let contenido = '';
+  const esPdf = fileData.startsWith("data:application/pdf") || fileData.includes(".pdf");
+  const esImagen = fileData.startsWith("data:image/") || fileData.match(/\.(jpeg|jpg|gif|png|webp)/i);
+
+  if (esPdf || fileData.includes(".html") || fileData.startsWith("http")) {
+    contenido = `<iframe src="${fileData}" style="width:100%; max-width:900px; height:80vh; border:none; border-radius:12px; background:#fff;"></iframe>`;
+  } else if (esImagen) {
+    contenido = `<div style="max-width:100%; max-height:80vh; overflow:auto; border-radius:12px; background:#1a2a3d; padding:10px; display:flex; justify-content:center;"><img src="${fileData}" style="max-width:100%; object-fit:contain; border-radius:8px;"></div>`;
+  } else {
+    contenido = `<iframe src="${fileData}" style="width:100%; max-width:900px; height:80vh; border:none; border-radius:12px; background:#fff;"></iframe>`;
+  }
+
   const modal = document.createElement("div");
   modal.id = "vuelaele-modal-visor";
   modal.style = "position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(15,28,46,0.95); z-index:99999; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:20px; box-sizing:border-box;";
 
-  // 3. Preparamos el contenido (PDF o Imagen)
-  const visorContenido = esPdf
-    ? `<iframe src="${fileData}" style="width:100%; max-width:900px; height:80vh; border:none; border-radius:12px; background:#fff;"></iframe>`
-    : `<div style="max-width:100%; max-height:80vh; overflow:auto; border-radius:12px; background:#1a2a3d; padding:10px; display:flex; justify-content:center;"><img src="${fileData}" style="max-width:100%; object-fit:contain; border-radius:8px;"></div>`;
-
-  // 4. Añadimos el botón de cerrar
   const btnCerrar = `<button onclick="document.getElementById('vuelaele-modal-visor').remove()" style="margin-top:20px; padding:10px 20px; background:#ff4b4b; color:white; border:none; border-radius:8px; cursor:pointer; font-weight:bold; font-size:16px;">Cerrar</button>`;
 
-  modal.innerHTML = visorContenido + btnCerrar;
+  modal.innerHTML = contenido + btnCerrar;
   document.body.appendChild(modal);
 };
 
@@ -1125,29 +1127,47 @@ function vInfogBank(){
         <p style="color:#7f8c8d; font-style:italic; padding-left:10px;">No hay fichas o capturas disponibles para este nivel.</p>
       ` : `
         <div style="display:grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap:16px;">
-          ${filtered.map(i => `
-            <div onclick="abrirVisorFicha('${i.id}')"
-                 style="background-color:#1a2a3d; border:1px solid #344e70; border-radius:8px; padding:16px; position:relative; box-shadow:0 4px 6px rgba(0,0,0,0.1); cursor:pointer; transition: transform 0.2s;"
-                 onmouseover="this.style.transform='scale(1.02)'" onmouseout="this.style.transform='scale(1)'">
-              
-              <span style="position:absolute; top:12px; right:12px; background-color:${levelColors[i.level] || '#7f8c8d'}; color:#0f1c2e; font-size:11px; font-weight:bold; padding:2px 8px; border-radius:10px;">
-                ${i.level}
-              </span>
-              
-              <div style="font-size:32px; margin-bottom:10px;">
-                ${(i.file && (i.file.startsWith("data:application/pdf") || i.file.includes(".pdf"))) ? '📄' : '🖼️'}
-              </div>
-              
-              <h4 style="margin:0 0 25px 0; color:#fff; font-size:15px; padding-right:25px; line-height:1.3;">${i.title}</h4>
-              
-              <button onclick="eliminarFichaBank('${i.id}', event, '${i.title.replace(/'/g, "\\'")}')" 
-                      style="position:absolute; bottom:12px; right:12px; background:none; border:none; color:#e74c3c; cursor:pointer; font-size:14px; padding:4px; border-radius:4px; transition: background 0.2s;"
-                      onmouseover="this.style.backgroundColor='rgba(231,76,60,0.15)'" onmouseout="this.style.backgroundColor='transparent'"
-                      title="Eliminar del banco">
-                🗑️
-              </button>
-            </div>
-          `).join('')}
+          ${filtered.map(i => {
+  let icono = '📄';
+  const fileStr = (i.file || '').toLowerCase();
+  if (fileStr.includes('image') || fileStr.match(/\.(jpg|jpeg|png|gif|webp)/)) {
+    icono = '🖼️';
+  } else if (fileStr.includes('pdf')) {
+    icono = '📕';
+  } else if (fileStr.includes('html') || fileStr.startsWith('http')) {
+    icono = '🌐';
+  }
+
+  return `
+    <div style="background-color:#1a2a3d; border:1px solid #344e70; border-radius:8px; padding:16px; position:relative; box-shadow:0 4px 6px rgba(0,0,0,0.1); transition: transform 0.2s;"
+      onmouseover="this.style.transform='scale(1.02)'"
+      onmouseout="this.style.transform='scale(1)'">
+
+      <!-- Etiqueta de Nivel -->
+      <span style="position:absolute; top:12px; right:12px; background-color:${levelColors[i.level] || '#7f8c8d'}; color:#0f1c2e; font-size:11px; font-weight:bold; padding:2px 8px; border-radius:10px;">
+        ${i.level || 'Todos'}
+      </span>
+
+      <!-- Icono según tipo de archivo -->
+      <div style="font-size:36px; margin-bottom:10px; text-align:center;">
+        ${icono}
+      </div>
+
+      <!-- Título de la ficha -->
+      <h4 style="color:white; margin:0 0 12px 0; font-size:15px; font-weight:bold; text-align:center; word-break:break-word;">
+        ${i.title || 'Nueva Ficha'}
+      </h4>
+
+      <!-- Botonera de acciones completa -->
+      <div style="display:flex; justify-content:space-around; align-items:center; border-top:1px solid rgba(255,255,255,0.1); padding-top:10px; margin-top:8px;">
+        <button onclick="window.abrirVisorFicha('${i.id}')" title="Ver" style="background:none; border:none; color:#4299e1; cursor:pointer; font-size:18px;">👁️</button>
+        <a href="${i.file}" download="${i.title || 'ficha'}" title="Descargar" style="color:#48bb78; text-decoration:none; font-size:18px;">📥</a>
+        <button onclick="navigator.clipboard.writeText('${i.file}'); alert('¡Enlace copiado!')" title="Compartir" style="background:none; border:none; color:#ed8936; cursor:pointer; font-size:18px;">🔗</button>
+        <button onclick="window.eliminarFichaBank('${i.id}', event, '${i.title}')" title="Borrar" style="background:none; border:none; color:#f56565; cursor:pointer; font-size:18px;">🗑️</button>
+      </div>
+    </div>
+  `;
+}).join('')}   
         </div>
       `}
     </div>
