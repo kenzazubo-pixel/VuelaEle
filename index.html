@@ -3940,12 +3940,57 @@ function pMapLabel(a, ps) {
         </div>
     `;
 }
+function pSpotError(a, ps) {
+  const items = a.items || a.questions || a.cards || [];
+  if (!ps.idx) ps.idx = 0;
+  if (!ps.score) ps.score = 0;
+
+  if (ps.idx >= items.length) {
+    setTimeout(() => { if (typeof finish === 'function') finish(ps.score, items.length); }, 100);
+    return `<div style="text-align:center; padding:30px; color:#fff;"><h2>¡Juego completado! 🎉</h2></div>`;
+  }
+
+  const item = items[ps.idx];
+  const questionText = item.q || item.sentence || item.text || item.prompt || '';
+
+  window.checkSpotError = function() {
+    const input = document.getElementById('spot-user-ans');
+    if (!input) return;
+    const userAns = input.value.trim().toLowerCase();
+    const correctAns = (item.answer || item.correct || item.correctAnswer || '').toString().trim().toLowerCase();
+
+    if (userAns === correctAns) {
+      ps.score++;
+      if (typeof notify === 'function') notify("¡Correcto! 👏");
+    } else {
+      if (typeof notify === 'function') notify(`Incorrecto. Respuesta: ${item.answer || item.correct}`, false);
+    }
+
+    ps.idx++;
+    if (typeof render === 'function') render();
+  };
+
+  return `
+    <div style="max-width:500px; margin:0 auto; padding:20px; text-align:center; color:#fff; font-family:'Nunito', sans-serif;">
+      <div style="font-size:13px; opacity:0.8; margin-bottom:12px; font-weight:700;">PREGUNTA ${ps.idx + 1} DE ${items.length}</div>
+      <div style="background:rgba(255,255,255,.08); padding:20px; border-radius:16px; border:1px solid rgba(255,255,255,.15); margin-bottom:20px;">
+        <p style="font-size:18px; font-weight:800; margin:0; color:#FFD166;">${questionText}</p>
+      </div>
+      <div style="margin-bottom:15px;">
+        <input id="spot-user-ans" type="text" placeholder="Escribe la versión correcta..." style="width:100%; padding:14px; border-radius:12px; border:2px solid rgba(255,255,255,.2); background:rgba(0,0,0,.3); color:#fff; font-size:15px; font-weight:700; text-align:center; outline:none; box-sizing:border-box;" />
+      </div>
+      <button onclick="checkSpotError()" style="width:100%; padding:14px; border-radius:12px; background:#1CB0F6; border:none; color:#fff; font-weight:900; font-size:15px; cursor:pointer; box-shadow:0 4px 0 #1890C6;">
+        Comprobar respuesta
+      </button>
+    </div>
+  `;
+}
 
 // ===== JUEGO ENGINE =====
 function vPlay(){
   if(S.pFinished)return vFinish();
   const a=S.play;const ps=S.pState;
-  const engines={quiz:pQuiz,match:pMatch,anagram:pAnagram,truefalse:pTF,fillblank:pFill,categorize:pCat,hangman:pHangman,wordsearch:pWS,crossword:pCW,ordersentence:pOrder,roulette:pRoulette,mysterybox:pMystery,maplabel:pMapLabel};
+  const engines={quiz:pQuiz,match:pMatch,anagram:pAnagram,truefalse:pTF,fillblank:pFill,categorize:pCat,hangman:pHangman,wordsearch:pWS,crossword:pCW,ordersentence:pOrder,roulette:pRoulette,mysterybox:pMystery,maplabel:pMapLabel,spotterror:pSpotError};
   const body=(engines[a.type]||((a)=>`<p style="text-align:center;padding:24px;color:#6B6B6B">Motor en preparación…</p>`))(a,ps);
   const who=S.mode==="live"?S.livePlayers[S.liveIdx]:S.pName;
   const modeTags={board:'<span class="tag tag-blue">📺 Pizarra</span>',solo:'<span class="tag tag-green">⏱ Reto</span>',live:'<span class="tag tag-orange">🏆 Live</span>'};
