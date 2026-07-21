@@ -3990,7 +3990,7 @@ function pSpotError(a, ps) {
 function vPlay(){
   if(S.pFinished)return vFinish();
   const a=S.play;const ps=S.pState;
-  const engines={quiz:pQuiz,match:pMatch,anagram:pAnagram,truefalse:pTF,fillblank:pFill,categorize:pCat,hangman:pHangman,wordsearch:pWS,crossword:pCW,ordersentence:pOrder,roulette:pRoulette,mysterybox:pMystery,maplabel:pMapLabel,spotterror:pSpotError};
+  const engines={quiz:pQuiz,match:pMatch,anagram:pAnagram,truefalse:pTF,fillblank:pFill,categorize:pCat,hangman:pHangman,wordsearch:pWS,crossword:pCW,ordersentence:pOrder,roulette:pRoulette,mysterybox:pMystery,maplabel:pMapLabel,spoterror:pSpotError,spotterror:pSpotError};
   const body=(engines[a.type]||((a)=>`<p style="text-align:center;padding:24px;color:#6B6B6B">Motor en preparación…</p>`))(a,ps);
   const who=S.mode==="live"?S.livePlayers[S.liveIdx]:S.pName;
   const modeTags={board:'<span class="tag tag-blue">📺 Pizarra</span>',solo:'<span class="tag tag-green">⏱ Reto</span>',live:'<span class="tag tag-orange">🏆 Live</span>'};
