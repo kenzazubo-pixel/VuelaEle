@@ -3941,29 +3941,31 @@ function pMapLabel(a, ps) {
     `;
 }
 function pSpotError(a, ps) {
-  // Busca las preguntas en cualquiera de las propiedades posibles
-  const items = a.quiz || a.items || a.questions || a.cards || a.data || [];
+  // Filtra elementos vacíos o no válidos para evitar errores de lectura
+  const rawItems = a.quiz || a.items || a.questions || a.cards || a.data || [];
+  const items = (Array.isArray(rawItems) ? rawItems : []).filter(Boolean);
+
   if (!ps.idx) ps.idx = 0;
   if (!ps.score) ps.score = 0;
 
-  // Si el juego no tiene preguntas guardadas aún
+  // Si no hay preguntas válidas cargadas
   if (!items || items.length === 0) {
     return `
       <div style="text-align:center; padding:40px 20px; color:#fff; font-family:'Nunito', sans-serif;">
-        <h3 style="font-size:20px; margin-bottom:10px;">⚠️ Este juego aún no tiene preguntas</h3>
+        <h3 style="font-size:20px; margin-bottom:10px;">⚠️ Este juego aún no tiene preguntas válidas</h3>
         <p style="opacity:0.8;">Añade al menos una pregunta desde el editor antes de jugar.</p>
       </div>
     `;
   }
 
-  // Si ya ha respondido todas las preguntas
+  // Si ya se respondieron todas las preguntas
   if (ps.idx >= items.length) {
     setTimeout(() => { if (typeof finish === 'function') finish(ps.score, items.length); }, 100);
     return `<div style="text-align:center; padding:30px; color:#fff;"><h2>¡Juego completado! 🎉</h2></div>`;
   }
 
-  const item = items[ps.idx];
-  const questionText = item.q || item.sentence || item.text || item.prompt || '';
+  const item = items[ps.idx] || {};
+  const questionText = item.q || item.sentence || item.text || item.prompt || 'Pregunta sin texto';
 
   window.checkSpotError = function() {
     const input = document.getElementById('spot-user-ans');
@@ -3975,7 +3977,7 @@ function pSpotError(a, ps) {
       ps.score++;
       if (typeof notify === 'function') notify("¡Correcto! 👏");
     } else {
-      if (typeof notify === 'function') notify(`Incorrecto. Respuesta: ${item.answer || item.correct}`, false);
+      if (typeof notify === 'function') notify(`Incorrecto. Respuesta: ${item.answer || item.correct || ''}`, false);
     }
 
     ps.idx++;
