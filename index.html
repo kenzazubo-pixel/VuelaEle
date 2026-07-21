@@ -1707,25 +1707,51 @@ function saveReflectionQ(){
 
 function flipQuizAdd(){
   const q=document.getElementById("fq-question")?.value?.trim();
-  if(!q){notify("Escribe el enunciado primero",false);return}
+  if(!q){notify("Escribe el enunciado primero",false);return;}
+  
   const type=S.flipQType||"truefalse";
   const cfg=JSON.parse(localStorage.getItem("gse.v3.flip")||"{}");
   if(!cfg.quiz)cfg.quiz=[];
-  if(type==="truefalse"){
+  
+  if(type==="quiz"){
+    const opt0=document.getElementById('fq-opt-0')?.value?.trim();
+    const opt1=document.getElementById('fq-opt-1')?.value?.trim();
+    const opt2=document.getElementById('fq-opt-2')?.value?.trim();
+    const opt3=document.getElementById('fq-opt-3')?.value?.trim();
+    
+    if(!opt0 || !opt1 || !opt2 || !opt3){
+      notify("Completa las 4 opciones de respuesta",false);
+      return;
+    }
+    
+    const sel=document.querySelector('input[name="quiz-correct"]:checked');
+    const correctIdx=sel ? parseInt(sel.value) : 0;
+    
+    cfg.quiz.push({
+      q,
+      type:"quiz",
+      options:[opt0,opt1,opt2,opt3],
+      answer:correctIdx
+    });
+  } else if(type==="truefalse"){
     const sel=document.querySelector('input[name="tf-answer"]:checked');
-    if(!sel){notify("Marca Verdadero o Falso",false);return}
+    if(!sel){notify("Marca Verdadero o Falso",false);return;}
     cfg.quiz.push({q,type:"truefalse",correct:sel.value==="true"});
   } else {
     const answer=document.getElementById("fq-answer")?.value?.trim();
-    if(!answer){notify("Escribe la respuesta correcta",false);return}
+    if(!answer){notify("Escribe la respuesta correcta",false);return;}
     cfg.quiz.push({q,type:"fillblank",answer});
   }
+  
   localStorage.setItem("gse.v3.flip",JSON.stringify(cfg));
-  notify("Pregunta añadida ✓");
+  notify("Pregunta añadida 👍");
+  
+  // Limpiar campos
   document.getElementById("fq-question").value="";
-  const ans=document.getElementById("fq-answer");if(ans)ans.value="";
-  const radios=document.querySelectorAll('input[name="tf-answer"]');radios.forEach(r=>r.checked=false);
-  render();
+  const ans=document.getElementById("fq-answer"); if(ans)ans.value="";
+  const radios=document.querySelectorAll('input[name="tf-answer"]'); radios.forEach(r=>r.checked=false);
+  
+  if(typeof render==='function') render();
 }
 
 function flipQuizRemove(i){
