@@ -3962,7 +3962,13 @@ function vPlay(){
   </div></div>`;
 }
 
-function exitPlay(){S.pFinished=false;S.pState={};S.view=S.role==="teacher"?"teacher":"student";render()}
+function exitPlay(){
+  S.pFinished = false;
+  S.pState = {};
+  S.role = "teacher";
+  S.view = "teacher";
+  if (typeof render === 'function') render();
+}
 
 function finish(score,total){
   const dur=Date.now()-S.startTime;
