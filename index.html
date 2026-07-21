@@ -1509,18 +1509,16 @@ function vFlip(){
 
         <!-- Tipo de pregunta -->
         <div style="display:flex;gap:8px;margin-bottom:12px">
-          <button id="qtype-tf" onclick="S.flipQType='truefalse';document.getElementById('qtype-tf').style.background='rgba(206,130,255,.2)';document.getElementById('qtype-tf').style.borderColor='#CE82FF';document.getElementById('qtype-fill').style.background='transparent';document.getElementById('qtype-fill').style.borderColor='rgba(255,255,255,.1)'" 
-            style="padding:6px 14px;border-radius:10px;border:2px solid ${!S.flipQType||S.flipQType==='truefalse'?"#CE82FF":"rgba(255,255,255,.1)"};background:${!S.flipQType||S.flipQType==='truefalse'?"rgba(206,130,255,.2)":"transparent"};color:${!S.flipQType||S.flipQType==='truefalse'?"#CE82FF":"rgba(201,211,232,.5)"};font-size:12px;font-weight:900;cursor:pointer;font-family:'Nunito',sans-serif">
-            ⚖️ Verdadero / Falso
-          </button>
-          <button id="qtype-fill" onclick="S.flipQType='fillblank';document.getElementById('qtype-fill').style.background='rgba(28,176,246,.2)';document.getElementById('qtype-fill').style.borderColor='#1CB0F6';document.getElementById('qtype-tf').style.background='transparent';document.getElementById('qtype-tf').style.borderColor='rgba(255,255,255,.1)'"
-            style="padding:6px 14px;border-radius:10px;border:2px solid ${S.flipQType==='fillblank'?"#1CB0F6":"rgba(255,255,255,.1)"};background:${S.flipQType==='fillblank'?"rgba(28,176,246,.2)":"transparent"};color:${S.flipQType==='fillblank'?"#1CB0F6":"rgba(201,211,232,.5)"};font-size:12px;font-weight:900;cursor:pointer;font-family:'Nunito',sans-serif">
-            ✍️ Completar hueco
-          </button>
-          <button id="qtype-quiz"
-  onclick="S.flipQType='quiz'; document.getElementById('qtype-quiz').style.background='rgba(28,176,246,.2)'; document.getElementById('qtype-quiz').style.borderColor='#1CB0F6'; document.getElementById('qtype-tf').style.background='transparent'; document.getElementById('qtype-tf').style.borderColor='rgba(255,255,255,.1)'; document.getElementById('qtype-fill').style.background='transparent'; document.getElementById('qtype-fill').style.borderColor='rgba(255,255,255,.1)';"
-  style="padding:6px 14px; border-radius:10px; border:2px solid ${S.flipQType==='quiz'?'#1CB0F6':'rgba(255,255,255,.1)'}; background:${S.flipQType==='quiz'?'rgba(28,176,246,.2)':'transparent'}; color:${S.flipQType==='quiz'?'#1CB0F6':'rgba(201,211,232,.5)'}; font-size:12px; font-weight:900; cursor:pointer; font-family:'Nunito', sans-serif;">
-  Quiz (4 opciones)
+          <button id="qtype-tf" onclick="S.flipQType='truefalse'; typeof render==='function'&&render();" style="padding:6px 14px; border-radius:10px; border:2px solid ${!S.flipQType || S.flipQType==='truefalse'?'#1CB0F6':'rgba(255,255,255,.1)'}; background:${!S.flipQType || S.flipQType==='truefalse'?'rgba(28,176,246,.2)':'transparent'}; color:${!S.flipQType || S.flipQType==='truefalse'?'#1CB0F6':'rgba(201,211,232,.5)'}; font-size:12px; font-weight:900; cursor:pointer; font-family:'Nunito', sans-serif;">
+  ⚖️ Verdadero / Falso
+</button>
+
+<button id="qtype-fill" onclick="S.flipQType='fillblank'; typeof render==='function'&&render();" style="padding:6px 14px; border-radius:10px; border:2px solid ${S.flipQType==='fillblank'?'#1CB0F6':'rgba(255,255,255,.1)'}; background:${S.flipQType==='fillblank'?'rgba(28,176,246,.2)':'transparent'}; color:${S.flipQType==='fillblank'?'#1CB0F6':'rgba(201,211,232,.5)'}; font-size:12px; font-weight:900; cursor:pointer; font-family:'Nunito', sans-serif;">
+  ✍️ Completar hueco
+</button>
+
+<button id="qtype-quiz" onclick="S.flipQType='quiz'; typeof render==='function'&&render();" style="padding:6px 14px; border-radius:10px; border:2px solid ${S.flipQType==='quiz'?'#1CB0F6':'rgba(255,255,255,.1)'}; background:${S.flipQType==='quiz'?'rgba(28,176,246,.2)':'transparent'}; color:${S.flipQType==='quiz'?'#1CB0F6':'rgba(201,211,232,.5)'}; font-size:12px; font-weight:900; cursor:pointer; font-family:'Nunito', sans-serif;">
+  🎯 Quiz (4 opciones)
 </button>
         </div>
 
