@@ -3941,8 +3941,7 @@ function pMapLabel(a, ps) {
     `;
 }
 function pSpotError(a, ps) {
-  // 1. OBTENCIÓN Y UNIFICACIÓN DE DATOS
-  // Get text from multiple sources, defaulting to data.texto or just a.text
+  // 1. Obtención de datos del editor
   let rawData = "";
   if (a.data) {
     if (typeof a.data === 'string') rawData = a.data;
@@ -3952,134 +3951,155 @@ function pSpotError(a, ps) {
     rawData = a.texto || a.text || a.content || a.rawText || a.quiz || a.items || "";
   }
 
-  // Combine multiple phrases into a single coherent exercise block
-  let exerciseText = "";
-  if (typeof rawData === 'string') {
-    exerciseText = rawData;
-  } else if (Array.isArray(rawData)) {
-    exerciseText = rawData.map(entry => {
-      let sentence = "";
-      if (typeof entry === 'string') sentence = entry;
-      else if (entry.sentence) sentence = entry.sentence;
-      else if (entry.text) sentence = entry.text;
-      return sentence.trim();
-    }).filter(Boolean).join(' ');
-  }
-
-  // Handle empty text state
-  if (!exerciseText || !exerciseText.trim()) {
+  if (!rawData || !rawData.trim()) {
     return `
-      <div style="text-align:center; padding:40px 20px; color:#fff; font-family:'Nunito', sans-serif;">
-        <h3 style="font-size:20px; margin-bottom:10px;">⚠️ Este juego aún no tiene frases válidas</h3>
-        <p style="opacity:0.8;">Escribe las frases en el editor usando asteriscos para señalar los errores.</p>
+      <div style="text-align:center; padding:40px 20px; color:#1e293b; font-family:'Nunito', sans-serif;">
+        <h3 style="font-size:20px; margin-bottom:10px; color:#0f172a;">⚠️ Este juego aún no tiene frases cargadas</h3>
+        <p style="color:#475569;">Escribe las frases en el editor usando asteriscos para señalar los errores.</p>
       </div>
     `;
   }
 
-  // 2. STATE AND INITIAL PREPARATION (All-At-Once System)
+  // 2. Inicialización del juego interactivo (1 sola vez)
   if (!ps.isGameInitialized) {
-    // a. Create clean text for display (remove asterisks, keep error word plain)
-    const cleanDisplay = exerciseText.replace(/\*(.*?)\*/g, (match, content) => {
-      // Content can be "error|correcto" or just "error"
-      const errorOnly = content.split('|')[0].trim();
-      return errorOnly;
+    const tokenRegex = /(\*[^*]+\*|\S+|\s+)/g;
+    const matches = rawData.match(tokenRegex) || [rawData];
+    
+    let parsedTokens = [];
+    let errorCount = 0;
+
+    matches.forEach((token, idx) => {
+      if (token.startsWith('*') && token.endsWith('*')) {
+        const inner = token.slice(1, -1);
+        let err = inner;
+        let corr = "";
+        if (inner.includes('|')) {
+          [err, corr] = inner.split('|').map(s => s.trim());
+        } else {
+          err = inner.trim();
+        }
+
+        parsedTokens.push({
+          id: idx,
+          display: err,
+          isError: true,
+          errorWord: err.toLowerCase(),
+          correctWord: corr ? corr.toLowerCase() : "",
+          solved: false,
+          userCorrection: ""
+        });
+        errorCount++;
+      } else {
+        parsedTokens.push({
+          id: idx,
+          display: token,
+          isError: false
+        });
+      }
     });
 
-    // b. Build answer key (lowercase list of CORRECT words from *error|correcto*)
-    const key = [];
-    const regex = /\*(.*?)\*/g;
-    let match;
-    while ((match = regex.exec(exerciseText)) !== null) {
-      const content = match[1];
-      let correctAns = "";
-      if (content.includes('|')) {
-        // pattern: *error|correcto*
-        correctAns = content.split('|')[1].trim();
-      } else {
-        // pattern: *error*.
-        // Pedersenically complex: if no correct answer is provided, 
-        // we use the error itself as a fallback (will be correct by default).
-        // Best practice is to save as *error|correcto*.
-        correctAns = content.trim(); 
-      }
-      if (correctAns) key.push(correctAns.toLowerCase());
-    }
-
-    ps.score = 0; // Count of unique valid corrections found
-    ps.totalErrorsGlobal = key.length;
-    ps.currentItem = {
-      display: cleanDisplay,
-      key: key, // Unique answer key
-    };
-    ps.proposedString = ""; // User's input text for textarea
+    ps.tokens = parsedTokens;
+    ps.totalErrors = errorCount;
+    ps.score = 0;
+    ps.selectedIndex = null;
     ps.isGameInitialized = true;
   }
 
-  // Prevent Pedagogical errors (no asterisks found) but allow game to load
-  if (ps.totalErrorsGlobal === 0) {
-    return `<div style="text-align:center; padding:30px; color:#fff; font-family:'Nunito';"><h2>Juego cargado correctamente.</h2><p style="color:#aaa;">Este ejercicio no tiene errores marcados para corregir.</p></div>`;
-  }
+  // 3. Funciones de interacción
+  window.selectSpotWord = function(idx) {
+    ps.selectedIndex = idx;
+    if (typeof render === 'function') render();
+  };
 
-  // 3. CHECKING LOGIC (Dynamic Intersector)
-  window.checkSpotErrorAll = function() {
-    const input = document.getElementById('spot-user-ans-multi');
+  window.submitSpotCorrection = function() {
+    if (ps.selectedIndex === null) return;
+    const input = document.getElementById('spot-corr-input');
     if (!input) return;
-    const userAns = input.value.trim();
-    if (!userAns) return;
+    const val = input.value.trim();
+    if (!val) return;
 
-    // Convert input to unique lowercase list, separating by comma or space
-    const proposed = [...new Set(userAns.toLowerCase().split(/,|[ ]+/).filter(Boolean))];
-    const keySet = new Set(ps.currentItem.key);
+    const token = ps.tokens[ps.selectedIndex];
+    if (token && token.isError && !token.solved) {
+      let isRight = false;
+      if (token.correctWord) {
+        isRight = (val.toLowerCase() === token.correctWord);
+      } else {
+        isRight = (val.toLowerCase() !== token.errorWord);
+      }
 
-    // Count how many unique correct words are present in the unique proposed list
-    let correctCount = 0;
-    proposed.forEach(word => {
-      if (keySet.has(word)) correctCount++;
-    });
-
-    ps.score = correctCount;
-    ps.proposedString = userAns; // Persist raw proposed string
-
-    // Dynamic notification without render freeze
-    if (typeof notify === 'function') {
-      if (ps.score === ps.totalErrorsGlobal) notify("¡Impresionante! 🎉");
-      else notify(`${ps.score} / ${ps.totalErrorsGlobal} corregidos.`);
+      if (isRight) {
+        token.solved = true;
+        token.userCorrection = val;
+        ps.score++;
+        ps.selectedIndex = null;
+        if (typeof notify === 'function') notify("¡Excelente! Palabra corregida. 👏");
+      } else {
+        if (typeof notify === 'function') notify("Inténtalo de nuevo. Revisa la corrección.", false);
+      }
+    } else if (token && !token.isError) {
+      if (typeof notify === 'function') notify("Esa palabra es correcta. ¡Busca los errores!", false);
     }
 
     if (typeof render === 'function') render();
   };
 
-  // Prevent re-render from resetting input focus if not needed
-  // This logic works best with a full-render pattern as requested.
+  // 4. Renderizado del texto interactivo (LETRAS OSCURAS Y ALTO CONTRASTE)
+  let renderedTextHtml = ps.tokens.map((t, i) => {
+    if (!t.isError && !t.display.trim()) return t.display;
+    
+    if (t.solved) {
+      return `<span style="background:#10b981; color:#ffffff; padding:2px 8px; border-radius:6px; font-weight:800; text-decoration:line-through; margin:0 2px;">${t.display}</span> <span style="color:#059669; font-weight:800; margin-right:4px;">(${t.userCorrection})</span>`;
+    }
 
-  // 4. RENDER (Matched dynamic logic to static image layout)
-  const isSolved = ps.score === ps.totalErrorsGlobal;
-  const buttonCheck = `<button onclick="checkSpotErrorAll()" ${isSolved ? 'disabled' : ''} style="width:100%; padding:14px; border-radius:12px; background:#1CB0F6; border:none; color:#fff; font-weight:900; font-size:16px; cursor:pointer; box-shadow:0 4px 0 #1890C6; margin-bottom:10px;">Comprobar respuestas</button>`;
-  const buttonNext = `<button onclick="if(typeof finish === 'function') finish(ps.score, ps.totalErrorsGlobal);" ${!isSolved ? 'disabled' : ''} style="width:100%; padding:14px; border-radius:12px; background:#1CB0F6; border:none; color:#fff; font-weight:900; font-size:16px; cursor:pointer; box-shadow:0 4px 0 #1890C6;">Siguiente ejercicio</button>`;
-  const successMessage = isSolved ? `<p style="color:#4BB543; font-weight:700; font-size:16px; margin-top:15px; margin-bottom:15px;">¡Impresionante! Has corregido todas las palabras del texto. ¡Sigue así! 🎉</p>` : '';
-  const inputPlaceholder = isSolved ? "¡Frase completamente resuelta!" : "Escribe las palabras corregidas (separadas por comas/espacios)...";
+    const isSelected = (ps.selectedIndex === i);
+    const style = isSelected 
+      ? `background:#d97706; color:#ffffff; padding:3px 8px; border-radius:6px; cursor:pointer; font-weight:800; border:2px solid #b45309; box-shadow:0 2px 8px rgba(0,0,0,0.15);` 
+      : `color:#0f172a; cursor:pointer; padding:2px 5px; border-radius:4px; transition:all 0.2s; display:inline-block; font-weight:700;`;
+
+    return `<span onclick="selectSpotWord(${i})" style="${style}">${t.display}</span>`;
+  }).join('');
+
+  // 5. Panel inferior de corrección
+  let activeBox = "";
+  if (ps.selectedIndex !== null) {
+    const selToken = ps.tokens[ps.selectedIndex];
+    if (selToken.solved) {
+      activeBox = `<p style="color:#059669; font-weight:800; margin:15px 0;">¡Esta palabra ya ha sido corregida!</p>`;
+    } else {
+      activeBox = `
+        <div style="background:#f1f5f9; padding:16px; border-radius:14px; margin:15px 0; border:2px solid #cbd5e1; color:#0f172a;">
+          <p style="margin:0 0 10px 0; font-size:15px; color:#334155; font-weight:700;">Has marcado: <strong style="color:#b45309; font-size:18px;">"${selToken.display.trim()}"</strong></p>
+          <div style="display:flex; gap:10px; justify-content:center; max-width:400px; margin:0 auto;">
+            <input id="spot-corr-input" type="text" placeholder="Escribe la corrección..." style="padding:10px 14px; border-radius:10px; border:2px solid #94a3b8; font-size:15px; flex:1; text-align:center; outline:none; background:#ffffff; color:#0f172a; font-weight:700;" onkeydown="if(event.key==='Enter') submitSpotCorrection()" autofocus />
+            <button onclick="submitSpotCorrection()" style="padding:10px 18px; border-radius:10px; background:#10b981; border:none; color:#ffffff; font-weight:800; cursor:pointer; font-size:15px; box-shadow:0 2px 0 #047857;">Guardar</button>
+          </div>
+        </div>
+      `;
+    }
+  } else {
+    activeBox = `<p style="font-size:14px; color:#64748b; font-style:italic; margin:15px 0; font-weight:600;">Haz clic sobre la palabra del texto que creas que contiene un error.</p>`;
+  }
+
+  const isAllSolved = ps.score === ps.totalErrors;
 
   return `
-    <div style="max-width:550px; margin:0 auto; padding:20px; text-align:center; color:#fff; font-family:'Nunito', sans-serif;">
-      <div style="font-size:13px; opacity:0.8; margin-bottom:12px; font-weight:700;">EJERCICIO ${1} DE ${1}</div>
+    <div style="max-width:580px; margin:0 auto; padding:20px; text-align:center; color:#1e293b; font-family:'Nunito', sans-serif;">
+      <div style="font-size:13px; color:#475569; margin-bottom:12px; font-weight:800; letter-spacing:0.5px;">CORRIGE LOS ERRORES DEL TEXTO</div>
       
-      <div style="background:rgba(255,255,255,.08); padding:22px; border-radius:16px; border:1px solid rgba(255,255,255,.15); margin-bottom:15px;">
-        <!-- CUADRO AMARILLO CON TEXTO LIMPIO (SIN NEGRITA) -->
-        <p style="font-size:19px; font-weight:700; margin:0; line-height:1.5; color:#FFD166;">${ps.currentItem.display}</p>
+      <!-- CUADRO PRINCIPAL DE TEXTO (OSCURO SOBRE FONDO CLARO) -->
+      <div style="background:#f8fafc; padding:22px; border-radius:16px; border:2px solid #e2e8f0; line-height:2.2; font-size:19px; font-weight:700; color:#0f172a; text-align:center; box-shadow:0 2px 10px rgba(0,0,0,0.03);">
+        ${renderedTextHtml}
       </div>
 
-      <p style="font-size:14px; color:#aaa; font-style:italic; margin-top:0; margin-bottom:10px;">Encuentra y corrige las ${ps.totalErrorsGlobal} palabras incorrectas (separa por comas/espacios).</p>
+      ${activeBox}
 
-      <div style="margin-bottom:10px;">
-        <!-- TEXTAREA MULTILÍNEA PARA LA LISTA DE RESPUESTAS -->
-        <textarea id="spot-user-ans-multi" placeholder="${inputPlaceholder}" ${isSolved ? 'disabled' : ''} style="width:100%; height:80px; padding:12px; border-radius:12px; border:2px solid rgba(255,255,255,.2); background:rgba(0,0,0,.3); color:#fff; font-size:15px; font-weight:700; text-align:center; outline:none; box-sizing:border-box; resize:none;">${ps.proposedString}</textarea>
-      </div>
+      <p style="font-size:14px; color:#475569; font-weight:700; margin-top:0; margin-bottom:15px;">Total errores: ${ps.score} / ${ps.totalErrors} corregidos.</p>
 
-      <p style="font-size:14px; color:#aaa; font-style:italic; margin-top:0; margin-bottom:15px;">Total errores: ${ps.score} / ${ps.totalErrorsGlobal} corregidos.</p>
+      ${isAllSolved ? `<div style="background:#dcfce7; color:#15803d; border:2px solid #86efac; padding:12px; border-radius:12px; font-weight:800; margin-bottom:15px; font-size:16px;">¡Impresionante! Has corregido todos los errores del texto. 🎉</div>` : ''}
 
-      ${successMessage}
-      ${buttonCheck}
-      ${buttonNext}
+      <button onclick="if(typeof finish === 'function') finish(ps.score, ps.totalErrors);" ${!isAllSolved ? 'disabled' : ''} style="width:100%; padding:14px; border-radius:12px; background:#1cb0f6; border:none; color:#ffffff; font-weight:900; font-size:16px; cursor:${isAllSolved ? 'pointer' : 'default'}; opacity:${isAllSolved ? 1 : 0.4}; box-shadow:0 4px 0 #1890c6;">
+        Siguiente ejercicio
+      </button>
     </div>
   `;
 }
