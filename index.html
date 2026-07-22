@@ -4104,6 +4104,112 @@ function pSpotError(a, ps) {
   `;
 }
 
+// ==========================================
+// MÓDULO OPCIÓN B: ORGANIZACIÓN POR NIVELES (VuelaEle)
+// ==========================================
+function renderLevelSelector(a, ps) {
+  // 1. Estado inicial del nivel seleccionado
+  if (!ps.selectedLevel) {
+    ps.selectedLevel = 'A1'; // Nivel activo por defecto
+  }
+
+  // 2. Base de datos de juegos agrupados por Nivel (Extensible)
+  const levelModules = ps.levelModules || {
+    'A1': [
+      { id: 'game_a1_1', type: 'spot_error', title: 'Corrige el error: Presente de Indicativo', icon: '✏️' },
+      { id: 'game_a1_2', type: 'vocab', title: 'Vocabulario: La Casa y la Familia', icon: '🏡' }
+    ],
+    'A2': [
+      { id: 'game_a2_1', type: 'spot_error', title: 'Pasados: Pretérito Indefinido vs Imperfecto', icon: '📜' },
+      { id: 'game_a2_2', type: 'spot_error', title: 'Marcadores temporales de pasado', icon: '⏳' }
+    ],
+    'B1': [
+      { id: 'game_b1_1', type: 'spot_error', title: 'Subjuntivo: Deseos y Valoraciones', icon: '🧠' }
+    ],
+    'B2': [
+      { id: 'game_b2_1', type: 'spot_error', title: 'Oraciones Concesivas y Condicionales', icon: '🎯' }
+    ],
+    'C1/C2': [
+      { id: 'game_c1_1', type: 'spot_error', title: 'Perífrasis Verbales y Matices Avanzados', icon: '🚀' }
+    ]
+  };
+
+  // 3. Funciones de interacción
+  window.selectLevelTab = function(level) {
+    ps.selectedLevel = level;
+    if (typeof render === 'function') render();
+  };
+
+  window.launchGame = function(gameId) {
+    ps.activeGameId = gameId;
+    if (typeof onSelectGame === 'function') {
+      onSelectGame(gameId);
+    } else if (typeof render === 'function') {
+      render();
+    }
+  };
+
+  const levelsList = ['A1', 'A2', 'B1', 'B2', 'C1/C2'];
+  const currentGames = levelModules[ps.selectedLevel] || [];
+
+  // 4. Renderizado de pestañas de nivel
+  const levelTabsHtml = levelsList.map(lvl => {
+    const isActive = ps.selectedLevel === lvl;
+    const activeStyle = isActive 
+      ? `background:#1cb0f6; color:#ffffff; border-color:#1890c6; font-weight:900; box-shadow:0 4px 0 #1890c6; transform:translateY(-2px);` 
+      : `background:#f1f5f9; color:#475569; border-color:#cbd5e1; font-weight:700; opacity:0.85;`;
+
+    return `
+      <button onclick="selectLevelTab('${lvl}')" style="padding:10px 18px; border-radius:12px; border:2px solid; cursor:pointer; font-size:15px; transition:all 0.15s ease; ${activeStyle}">
+        ${lvl}
+      </button>
+    `;
+  }).join('');
+
+  // 5. Renderizado de lista de actividades según nivel
+  const gamesListHtml = currentGames.length > 0 
+    ? currentGames.map(game => `
+        <div style="background:#ffffff; border:2px solid #e2e8f0; border-radius:14px; padding:16px 20px; margin-bottom:12px; display:flex; align-items:center; justify-content:space-between; box-shadow:0 2px 8px rgba(0,0,0,0.03);">
+          <div style="display:flex; align-items:center; gap:14px; text-align:left;">
+            <span style="font-size:26px; background:#f8fafc; padding:8px 12px; border-radius:10px; border:1px solid #e2e8f0;">${game.icon}</span>
+            <div>
+              <h4 style="margin:0; font-size:16px; color:#0f172a; font-weight:800;">${game.title}</h4>
+              <span style="font-size:12px; color:#64748b; font-weight:600;">Nivel ${ps.selectedLevel}</span>
+            </div>
+          </div>
+          <button onclick="launchGame('${game.id}')" style="background:#10b981; border:none; color:#ffffff; font-weight:800; padding:10px 18px; border-radius:10px; cursor:pointer; font-size:14px; box-shadow:0 3px 0 #047857; transition:all 0.1s;">
+            Jugar ➔
+          </button>
+        </div>
+      `).join('')
+    : `<p style="color:#64748b; font-style:italic; padding:30px 0; font-weight:600;">Aún no hay actividades creadas para el nivel ${ps.selectedLevel}.</p>`;
+
+  return `
+    <div style="max-width:620px; margin:0 auto; padding:20px; font-family:'Nunito', sans-serif; text-align:center;">
+      
+      <!-- TÍTULO PRINCIPAL -->
+      <h2 style="color:#0f172a; font-size:22px; font-weight:900; margin-bottom:6px;">Actividades por Niveles</h2>
+      <p style="color:#64748b; font-size:14px; margin-top:0; margin-bottom:20px; font-weight:600;">Elige un nivel para desplegar sus ejercicios disponibles.</p>
+
+      <!-- BARRA DE PESTAÑAS (CAJONES A1, A2, B1...) -->
+      <div style="display:flex; gap:8px; justify-content:center; flex-wrap:wrap; margin-bottom:25px;">
+        ${levelTabsHtml}
+      </div>
+
+      <!-- CAJÓN DE ACTIVIDADES ABIERTO -->
+      <div style="background:#f8fafc; border:2px solid #e2e8f0; border-radius:18px; padding:20px; text-align:center;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px; padding:0 4px;">
+          <span style="font-size:13px; font-weight:800; color:#475569; text-transform:uppercase; letter-spacing:0.5px;">Cajón ${ps.selectedLevel}</span>
+          <span style="font-size:12px; font-weight:700; background:#e2e8f0; color:#334155; padding:3px 10px; border-radius:12px;">${currentGames.length} ${currentGames.length === 1 ? 'actividad' : 'actividades'}</span>
+        </div>
+        
+        ${gamesListHtml}
+      </div>
+
+    </div>
+  `;
+}
+
 // ===== JUEGO ENGINE =====
 function vPlay(){
   if(S.pFinished)return vFinish();
