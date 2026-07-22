@@ -3941,15 +3941,20 @@ function pMapLabel(a, ps) {
     `;
 }
 function pSpotError(a, ps) {
-  console.log("OBJETO JUEGO:", a);
-  // 1. Obtener el texto o lista de frases de cualquier propiedad posible
-  let rawData = a.text || a.content || a.rawText || a.errorText || a.quiz || a.items || a.questions || a.cards || a.sentences || "";
+  // Extrae el texto soportando data.texto, data.text o propiedades directas
+  let rawData = "";
+  if (a.data) {
+    if (typeof a.data === 'string') rawData = a.data;
+    else if (typeof a.data === 'object') rawData = a.data.texto || a.data.text || a.data.content || "";
+  }
+  if (!rawData) {
+    rawData = a.texto || a.text || a.content || a.rawText || a.quiz || a.items || "";
+  }
 
   let list = [];
   if (typeof rawData === 'string') {
-    // Separa por líneas
+    // Separa por líneas o por frases con asteriscos
     list = rawData.split(/\n+/).map(l => l.trim()).filter(Boolean);
-    // Si todo está en una sola línea pero hay varias frases con asteriscos, separa por puntos
     if (list.length === 1 && (list[0].match(/\*/g) || []).length > 2) {
       list = list[0].split(/(?<=\.)\s+/).filter(Boolean);
     }
@@ -3965,7 +3970,7 @@ function pSpotError(a, ps) {
   if (!ps.idx) ps.idx = 0;
   if (!ps.score) ps.score = 0;
 
-  // Si no hay texto cargado
+  // Si no hay frases cargadas
   if (!items || items.length === 0) {
     return `
       <div style="text-align:center; padding:40px 20px; color:#fff; font-family:'Nunito', sans-serif;">
@@ -3975,7 +3980,7 @@ function pSpotError(a, ps) {
     `;
   }
 
-  // Si ya se respondieron todas las preguntas
+  // Si ya terminó todos los ejercicios
   if (ps.idx >= items.length) {
     setTimeout(() => { if (typeof finish === 'function') finish(ps.score, items.length); }, 100);
     return `<div style="text-align:center; padding:30px; color:#fff;"><h2>¡Juego completado! 🎉</h2></div>`;
@@ -3984,7 +3989,7 @@ function pSpotError(a, ps) {
   const item = items[ps.idx] || {};
   let rawSentence = item.sentence || item.q || item.text || item.prompt || (typeof item === 'string' ? item : '');
 
-  // Analiza sintaxis *error|correcto* o solo *error*
+  // Procesa asteriscos en la frase
   let targetError = '';
   let targetCorrect = item.answer || item.correct || item.correctAnswer || '';
 
