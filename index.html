@@ -3941,6 +3941,7 @@ function pMapLabel(a, ps) {
     `;
 }
 function pSpotError(a, ps) {
+  console.log("OBJETO JUEGO:", a);
   // 1. Obtener el texto o lista de frases de cualquier propiedad posible
   let rawData = a.text || a.content || a.rawText || a.errorText || a.quiz || a.items || a.questions || a.cards || a.sentences || "";
 
