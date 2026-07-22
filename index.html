@@ -3941,7 +3941,7 @@ function pMapLabel(a, ps) {
     `;
 }
 function pSpotError(a, ps) {
-  // Extrae el texto soportando data.texto, data.text o propiedades directas
+  // 1. OBTENCIÓN DE DATOS (soportando data.texto y texto directo)
   let rawData = "";
   if (a.data) {
     if (typeof a.data === 'string') rawData = a.data;
@@ -3951,9 +3951,9 @@ function pSpotError(a, ps) {
     rawData = a.texto || a.text || a.content || a.rawText || a.quiz || a.items || "";
   }
 
+  // 2. EXTRACCIÓN DE FRASES LIMPIAS
   let list = [];
   if (typeof rawData === 'string') {
-    // Separa por líneas o por frases con asteriscos
     list = rawData.split(/\n+/).map(l => l.trim()).filter(Boolean);
     if (list.length === 1 && (list[0].match(/\*/g) || []).length > 2) {
       list = list[0].split(/(?<=\.)\s+/).filter(Boolean);
@@ -3962,78 +3962,150 @@ function pSpotError(a, ps) {
     list = rawData;
   }
 
-  const items = list.map(entry => {
-    if (typeof entry === 'string') return { sentence: entry };
-    return entry;
-  }).filter(Boolean);
-
-  if (!ps.idx) ps.idx = 0;
-  if (!ps.score) ps.score = 0;
-
-  // Si no hay frases cargadas
-  if (!items || items.length === 0) {
+  // Si no hay frases cargadas aún
+  if (!list || list.length === 0) {
     return `
       <div style="text-align:center; padding:40px 20px; color:#fff; font-family:'Nunito', sans-serif;">
-        <h3 style="font-size:20px; margin-bottom:10px;">⚠️ Este juego aún no tiene frases cargadas</h3>
+        <h3 style="font-size:20px; margin-bottom:10px;">⚠️ Este juego aún no tiene frases válidas</h3>
         <p style="opacity:0.8;">Escribe las frases en el editor usando asteriscos para señalar los errores.</p>
       </div>
     `;
   }
 
-  // Si ya terminó todos los ejercicios
-  if (ps.idx >= items.length) {
-    setTimeout(() => { if (typeof finish === 'function') finish(ps.score, items.length); }, 100);
-    return `<div style="text-align:center; padding:30px; color:#fff;"><h2>¡Juego completado! 🎉</h2></div>`;
-  }
+  // 3. ESTADO DEL JUEGO (persistencia en ps)
+  if (!ps.score) ps.score = 0; // Puntuación global
+  if (!ps.idx) ps.idx = 0; // Índice de frase actual
 
-  const item = items[ps.idx] || {};
-  let rawSentence = item.sentence || item.q || item.text || item.prompt || (typeof item === 'string' ? item : '');
+  // 4. PREPARACIÓN DEL JUEGO EN LA PRIMERA LLAMADA (ESTADO DURADERO)
+  if (!ps.isGameInitialized) {
+    ps.prepped = []; // Almacena objetos pre-procesados de cada frase
+    let globalTotalErrors = 0;
 
-  // Procesa asteriscos en la frase
-  let targetError = '';
-  let targetCorrect = item.answer || item.correct || item.correctAnswer || '';
-
-  const matchPipe = rawSentence.match(/\*(.*?)\|(.*?)\*/);
-  const matchSimple = rawSentence.match(/\*(.*?)\*/);
-
-  if (matchPipe) {
-    targetError = matchPipe[1];
-    targetCorrect = matchPipe[2];
-    rawSentence = rawSentence.replace(/\*(.*?)\|(.*?)\*/, `<span style="color:#FF6B6B; font-weight:800; text-decoration:underline;">$1</span>`);
-  } else if (matchSimple) {
-    targetError = matchSimple[1];
-    if (!targetCorrect) targetCorrect = matchSimple[1];
-    rawSentence = rawSentence.replace(/\*(.*?)\*/, `<span style="color:#FF6B6B; font-weight:800; text-decoration:underline;">$1</span>`);
-  }
-
-  window.checkSpotError = function() {
-    const input = document.getElementById('spot-user-ans');
-    if (!input) return;
-    const userAns = input.value.trim().toLowerCase();
-    const expectedAns = targetCorrect.toString().trim().toLowerCase();
-
-    if (userAns && (userAns === expectedAns || (targetError && userAns !== targetError.toLowerCase()))) {
-      ps.score++;
-      if (typeof notify === 'function') notify("¡Correcto! 👏");
-    } else {
-      if (typeof notify === 'function') notify(`Respuesta esperada: ${targetCorrect || 'Atención a la palabra marcada'}`, false);
+    for (let i = 0; i < list.length; i++) {
+      let rawSentence = list[i];
+      if (typeof rawSentence !== 'string') rawSentence = (rawSentence.sentence || rawSentence.text || '').toString();
+      
+      let sentenceErrors = [];
+      
+      // Regex global para encontrar todos los *e|c* o *e*
+      const regexAll = /\*(.*?)\*/g;
+      let match;
+      
+      while ((match = regexAll.exec(rawSentence)) !== null) {
+        let content = match[1];
+        let error, correct;
+        
+        if (content.includes('|')) {
+          [error, correct] = content.split('|').map(s => s.trim());
+        } else {
+          error = content.trim();
+          correct = error; // Fallback para *error* simple
+        }
+        
+        if (error) {
+          sentenceErrors.push({ error: error.toLowerCase(), correct: correct, original: match[0] });
+          globalTotalErrors++;
+        }
+      }
+      
+      // Frase final limpia, sin asteriscos (el alumno tiene que buscar)
+      const textWithoutAsterisks = rawSentence.replace(/\*(.*?)\*/g, (m, c) => {
+        return c.split('|')[0].trim(); // Deja la palabra incorrecta original
+      });
+      
+      // Guarda el objeto preparado con un Set para los solvedIndices por frase
+      ps.prepped.push({ 
+        textWithoutAsterisks: textWithoutAsterisks,
+        errors: sentenceErrors, 
+        solvedIndices: new Set() 
+      });
     }
 
-    ps.idx++;
+    ps.isGameInitialized = true;
+    ps.totalErrorsGlobal = globalTotalErrors; // Total de errores en todo el texto
+  }
+
+  // 5. RENDERIZADO DE LA FRASE ACTUAL
+  if (ps.idx >= ps.prepped.length) {
+    setTimeout(() => { if (typeof finish === 'function') finish(ps.score, ps.totalErrorsGlobal); }, 100);
+    return `<div style="text-align:center; padding:30px; color:#fff; font-family:'Nunito';"><h2>¡Juego completado! 🎉<br>Has corregido ${ps.score} de ${ps.totalErrorsGlobal} errores.</h2></div>`;
+  }
+
+  const currentItem = ps.prepped[ps.idx];
+  const remainingInSentence = currentItem.errors.length - currentItem.solvedIndices.size;
+
+  // 6. FUNCIÓN GLOBAL DE COMPROBACIÓN DE UNA CORRECCIÓN
+  window.checkCorrectionSlot = function() {
+    const input = document.getElementById('spot-user-ans-multi');
+    if (!input) return;
+    const userAns = input.value.trim().toLowerCase();
+    if (!userAns) return;
+    
+    let isCorrect = false;
+    
+    // Busca entre los errores de la frase si alguno coincide y no está resuelto
+    for (let i = 0; i < currentItem.errors.length; i++) {
+      const errorPair = currentItem.errors[i];
+      if (!currentItem.solvedIndices.has(i)) {
+        
+        // Compara con la palabra correcta esperada
+        if (userAns === errorPair.correct.toLowerCase()) {
+          ps.score++;
+          currentItem.solvedIndices.add(i);
+          isCorrect = true;
+          input.value = ""; // Limpia input para la siguiente corrección
+          break; // Una corrección a la vez
+        }
+      }
+    }
+    
+    if (isCorrect) {
+      // Feedback dinámico sin colgar la app
+      if (typeof notify === 'function') notify(`¡1 error corregido! Quedan ${remainingInSentence - 1} en esta frase.`);
+    } else {
+      // Comprueba si ya la había corregido
+      let wasSolved = false;
+      for (let solvedIdx of currentItem.solvedIndices) {
+        if (userAns === currentItem.errors[solvedIdx].correct.toLowerCase()) {
+          wasSolved = true;
+          break;
+        }
+      }
+      if (wasSolved) if (typeof notify === 'function') notify("Esa palabra ya está corregida. Busca más.", false);
+      else if (typeof notify === 'function') notify("Inténtalo de nuevo. Palabra incorrecta.", false);
+    }
+    
+    // Si la frase está resuelta
+    if (currentItem.solvedIndices.size === currentItem.errors.length) {
+      if (typeof notify === 'function') notify("¡Perfecto! Frase completamente corregida.");
+      input.blur();
+    }
+    
     if (typeof render === 'function') render();
   };
 
+  // 7. RENDERIZADO HTML FINAL (Vista limpia, sin marcas)
+  const isSentenceSolved = currentItem.solvedIndices.size === currentItem.errors.length;
+  const buttonText = isSentenceSolved ? "Siguiente ejercicio" : "Comprobar palabra";
+  const buttonLogic = isSentenceSolved ? `ps.idx++; render();` : `checkCorrectionSlot()`;
+  const placeholder = isSentenceSolved ? "¡Frase resuelta!" : "Escribe una palabra corregida...";
+
   return `
     <div style="max-width:550px; margin:0 auto; padding:20px; text-align:center; color:#fff; font-family:'Nunito', sans-serif;">
-      <div style="font-size:13px; opacity:0.8; margin-bottom:12px; font-weight:700;">EJERCICIO ${ps.idx + 1} DE ${items.length}</div>
-      <div style="background:rgba(255,255,255,.08); padding:22px; border-radius:16px; border:1px solid rgba(255,255,255,.15); margin-bottom:20px;">
-        <p style="font-size:19px; font-weight:800; margin:0; line-height:1.5; color:#FFD166;">${rawSentence}</p>
+      <div style="font-size:13px; opacity:0.8; margin-bottom:12px; font-weight:700;">FRASE ${ps.idx + 1} DE ${ps.prepped.length}</div>
+      <div style="background:rgba(255,255,255,.08); padding:22px; border-radius:16px; border:1px solid rgba(255,255,255,.15); margin-bottom:10px;">
+        <!-- FRASE LIMPIA SIN ASTERISCOS NI COLORES -->
+        <p style="font-size:20px; font-weight:700; margin:0; line-height:1.5; color:#FFD166;">${currentItem.textWithoutAsterisks}</p>
       </div>
+      
+      <!-- CONTADOR DE ERRORES RESTANTES -->
+      <p style="font-size:14px; color:#aaa; font-style:italic; margin-top:0; margin-bottom:15px;">Quedan ${remainingInSentence} errores por corregir en esta frase.</p>
+      
       <div style="margin-bottom:15px;">
-        <input id="spot-user-ans" type="text" placeholder="Escribe la palabra corregida..." style="width:100%; padding:14px; border-radius:12px; border:2px solid rgba(255,255,255,.2); background:rgba(0,0,0,.3); color:#fff; font-size:16px; font-weight:700; text-align:center; outline:none; box-sizing:border-box;" onkeydown="if(event.key==='Enter') checkSpotError()" />
+        <input id="spot-user-ans-multi" type="text" placeholder="${placeholder}" ${isSentenceSolved ? 'disabled' : ''} style="width:100%; padding:14px; border-radius:12px; border:2px solid rgba(255,255,255,.2); background:rgba(0,0,0,.3); color:#fff; font-size:16px; font-weight:700; text-align:center; outline:none; box-sizing:border-box;" onkeydown="if(event.key==='Enter') ${buttonLogic}" />
       </div>
-      <button onclick="checkSpotError()" style="width:100%; padding:14px; border-radius:12px; background:#1CB0F6; border:none; color:#fff; font-weight:900; font-size:16px; cursor:pointer; box-shadow:0 4px 0 #1890C6;">
-        Comprobar respuesta
+      <button onclick="${buttonLogic}" style="width:100%; padding:14px; border-radius:12px; background:#1CB0F6; border:none; color:#fff; font-weight:900; font-size:16px; cursor:pointer; box-shadow:0 4px 0 #1890C6;">
+        ${buttonText}
       </button>
     </div>
   `;
