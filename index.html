@@ -735,32 +735,83 @@ function vGames(){
         </button>
         
     </div>
-    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:20px;align-items:center">
-      <span style="font-size:12px;font-weight:900;text-transform:uppercase;letter-spacing:.15em;color:rgba(201,211,232,.5)">${t("filter_level")}</span>
-      ${LEVELS.map(l=>`<button onclick="S.filterLevel='${l}';render()" style="padding:6px 14px;border-radius:20px;border:2px solid ${levelColors[l]};background:${lvl===l?levelColors[l]:"transparent"};color:${lvl===l?"#0F1B3D":"#fff"};font-size:13px;font-weight:900;cursor:pointer;transition:.15s;font-family:'Nunito',sans-serif">${l}</button>`).join("")}
-    </div>
-    ${filtered.length===0
-      ?`<div class="empty-state"><div class="empty-icon">🪶</div><div class="empty-title">${lvl==="Todos"?"Sin juegos todavía":"Sin juegos para "+lvl}</div><div class="empty-desc">${lvl==="Todos"?"Crea tu primer juego en menos de un minuto.":"Prueba otro nivel o crea uno nuevo."}</div><button class="btn btn-green btn-lg" onclick="openEditor(null)">+ Crear juego</button></div>`
-      :`<div class="games-grid">${filtered.map(a=>{const lc=levelColors[a.level]||"#C9A84C";return`<div class="game-card">
-          <div class="game-card-top"><span class="game-emoji">${GAME_META[a.type].emoji}</span>
-            <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px">
-              <span class="game-type-badge" style="font-family: 'Montserrat', sans-serif !important;">${GAME_META[a.type].label}</span>
-              ${a.level?`<span style="padding:2px 8px;border-radius:8px;font-size:10px;font-weight:900;background:${lc}22;color:${lc};border:1px solid ${lc}">${a.level}</span>`:""}
-            </div>
+    <!-- Barra de Filtros de Nivel (Cajones Activos) -->
+<div style="display:flex; gap:10px; flex-wrap:wrap; margin-bottom:25px; align-items:center;">
+  <span style="font-size:13px; font-weight:900; text-transform:uppercase; letter-spacing:0.1em; color:rgba(201,211,232,0.7); margin-right:5px;">
+    ${t("filter_level") || "Nivel MCER:"}
+  </span>
+  ${(typeof LEVELS !== 'undefined' ? LEVELS : ['Todos', 'A1', 'A2', 'B1', 'B2', 'C1/C2']).map(l => {
+    const isActive = (S.filterLevel || 'Todos') === l;
+    const count = l === 'Todos' ? S.activities.length : S.activities.filter(a => (a.level || 'A1') === l).length;
+    return `
+      <button onclick="S.filterLevel='${l}'; render();" 
+              style="padding: 8px 16px; border-radius: 20px; font-weight: bold; font-size: 14px; cursor: pointer; transition: all 0.2s ease;
+                     background: ${isActive ? '#3b82f6' : 'rgba(255,255,255,0.08)'}; 
+                     color: ${isActive ? '#ffffff' : '#cbd5e1'}; 
+                     border: 1px solid ${isActive ? '#60a5fa' : 'rgba(255,255,255,0.15)'};
+                     box-shadow: ${isActive ? '0 4px 12px rgba(59,130,246,0.3)' : 'none'};">
+        ${l} <span style="font-size:11px; opacity:0.8; margin-left:4px;">(${count})</span>
+      </button>
+    `;
+  }).join('')}
+</div>
+
+<!-- Listado de Juegos Organizados por Nivel -->
+<div style="display:grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap:20px;">
+  ${(() => {
+    const currentFilter = S.filterLevel || 'Todos';
+    const list = currentFilter === 'Todos' 
+      ? S.activities 
+      : S.activities.filter(a => (a.level || 'A1') === currentFilter);
+
+    if (!list || list.length === 0) {
+      return `
+        <div style="grid-column: 1 / -1; text-align: center; padding: 40px; background: rgba(255,255,255,0.03); border: 2px dashed rgba(255,255,255,0.15); border-radius: 16px;">
+          <p style="font-size: 18px; color: #94a3b8; margin-bottom: 15px;">📭 No hay juegos registrados en el nivel <strong>${currentFilter}</strong>.</p>
+          <button class="btn" onclick="openEditor(null)" style="background: #ff6b9d; color: white; border: none; padding: 10px 20px; border-radius: 8px; font-weight: bold; cursor: pointer;">
+            + Crear el primer juego para ${currentFilter}
+          </button>
+        </div>
+      `;
+    }
+
+    return list.map(a => `
+      <div class="game-card" style="background: rgba(30, 41, 59, 0.7); border: 1px solid rgba(255,255,255,0.1); border-radius: 14px; padding: 18px; display: flex; flex-direction: column; justify-content: space-between; gap: 12px;">
+        <div>
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+            <span style="background: #3b82f6; color: white; padding: 3px 10px; border-radius: 12px; font-size: 12px; font-weight: bold;">
+              ${a.level || 'A1'}
+            </span>
+            <span style="font-size: 12px; color: #94a3b8; text-transform: uppercase; font-weight: 700;">
+              ${a.type || a.modo || 'Juego'}
+            </span>
           </div>
-          <div class="game-title">${a.title}</div>
-          ${a.subject?`<div class="game-subject">${a.subject}</div>`:""}
-          <div class="game-actions">
-            <button class="game-action" style="color:#58CC02" onclick="pickMode('${a.id}')">${t("play")}</button>
-            <div class="game-sep"></div>
-            <button class="game-action" onclick="openEditor('${a.id}')">${t("edit")}</button>
-            <div class="game-sep"></div>
-<button class="game-action" style="color:#64748b" onclick="printAnyGameId('${a.id}')">🖨️</button>
-            <div class="game-sep"></div>
-            <button class="game-action" style="color:#FF4B4B" onclick="delGame('${a.id}')">🗑</button>
-          </div>
-        </div>`}).join("")}</div>`}
-  </div>`;
+          <h3 style="font-size: 18px; font-weight: bold; color: #ffffff; margin: 5px 0 0 0;">
+            ${a.title || a.nombre || 'Sin título'}
+          </h3>
+        </div>
+
+        <div style="display: flex; align-items: center; gap: 8px; background: rgba(0,0,0,0.2); padding: 8px; border-radius: 10px; justify-content: space-around;">
+          <button class="game-action" style="color:#58CC02; background:none; border:none; font-weight:bold; cursor:pointer;" onclick="pickMode('${a.id}')">
+            ${t("play") || "Jugar"}
+          </button>
+          <div class="game-sep" style="width:1px; height:16px; background:rgba(255,255,255,0.2);"></div>
+          <button class="game-action" style="background:none; border:none; color:#cbd5e1; cursor:pointer;" onclick="openEditor('${a.id}')">
+            ${t("edit") || "Editar"}
+          </button>
+          <div class="game-sep" style="width:1px; height:16px; background:rgba(255,255,255,0.2);"></div>
+          <button class="game-action" style="color:#64748b; background:none; border:none; cursor:pointer;" onclick="printAnyGameId('${a.id}')">
+            🖨️
+          </button>
+          <div class="game-sep" style="width:1px; height:16px; background:rgba(255,255,255,0.2);"></div>
+          <button class="game-action" style="color:#FF4B4B; background:none; border:none; cursor:pointer;" onclick="delGame('${a.id}')">
+            🗑️
+          </button>
+        </div>
+      </div>
+    `).join('');
+  })()}
+</div>`
 }
 
 function vPrepMenu(){
