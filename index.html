@@ -6386,6 +6386,48 @@ async function askProfeGemi(promptText) {
     return "Error de red al intentar contactar con ProfeGemi.";
   }
 }
+// Función para enviar el mensaje de la ventanita de ProfeGemi
+async function sendGemiMsg() {
+  const input = document.getElementById('gemiInput');
+  const chatBox = document.getElementById('gemiChatBox');
+  if (!input || !chatBox) return;
+
+  const text = input.value.trim();
+  if (!text) return;
+
+  // 1. Mostrar tu mensaje en el chat
+  chatBox.innerHTML += `
+    <div style="align-self: flex-end; background: #a855f7; color: white; padding: 10px 14px; border-radius: 14px 14px 0 14px; max-width: 82%; line-height: 1.4; margin-bottom: 8px; margin-left: auto;">
+      ${text}
+    </div>
+  `;
+  input.value = '';
+  chatBox.scrollTop = chatBox.scrollHeight;
+
+  // 2. Mostrar mensaje de espera
+  const loadingId = 'gemiLoading_' + Date.now();
+  chatBox.innerHTML += `
+    <div id="${loadingId}" style="align-self: flex-start; background: rgba(255,255,255,0.08); color: #cbd5e1; padding: 10px 14px; border-radius: 14px 14px 14px 0; max-width: 82%; font-style: italic; font-size: 13px; margin-bottom: 8px;">
+      ⏳ ProfeGemi está pensando...
+    </div>
+  `;
+  chatBox.scrollTop = chatBox.scrollHeight;
+
+  // 3. Consultar a Gemini
+  const reply = await askProfeGemi(text);
+
+  // 4. Mostrar la respuesta de ProfeGemi
+  const loader = document.getElementById(loadingId);
+  if (loader) {
+    loader.outerHTML = `
+      <div style="align-self: flex-start; background: rgba(255,255,255,0.08); border-left: 3px solid #c084fc; color: #f1f5f9; padding: 10px 14px; border-radius: 0 14px 14px 14px; max-width: 85%; line-height: 1.5; white-space: pre-wrap; margin-bottom: 8px;">
+        ${reply}
+      </div>
+    `;
+  }
+  chatBox.scrollTop = chatBox.scrollHeight;
+}
+
   </script>
 </body>
 </html>
