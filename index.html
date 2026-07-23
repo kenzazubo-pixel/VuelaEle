@@ -6076,20 +6076,19 @@ setTimeout(cargarDesdeNube, 600);
       }
   }
 
-  // Función universal para imprimir/descargar cualquier juego por su ID
+  // Función universal para imprimir cualquier juego por su ID
 window.printAnyGameId = function(id) {
-  // 1. Buscar el juego en la lista de actividades
   let game = null;
   if (typeof S !== 'undefined' && S.activities) {
-    game = S.activities.find(x => x.id == id);
+    game = S.activities.find(x => String(x.id) === String(id));
   }
   
   if (!game) {
-    alert("No se encontró el contenido de este juego.");
+    alert("No se encontró la información de este juego.");
     return;
   }
 
-  // 2. Extraer el texto o contenido del juego
+  // Extraer contenido del juego
   let contentHtml = "";
   if (game.data) {
     if (typeof game.data === 'string') {
@@ -6101,13 +6100,13 @@ window.printAnyGameId = function(id) {
     contentHtml = game.texto || game.frase || game.title || "Ejercicio interactivo";
   }
 
-  // Limpiar asteriscos (*palabra* -> ________)
+  // Convertir marcas como *palabra* en huecos para rellenar
   contentHtml = String(contentHtml).replace(/\*([^*]+)\*/g, ' _________ ');
 
-  // 3. Abrir ventana de impresión
+  // Abrir ventana limpia
   const printWindow = window.open('', '_blank');
   if (!printWindow) {
-    alert("⚠️ Tu navegador ha bloqueado la ventana emergente. Por favor, haz clic en el icono de bloqueo en la barra de direcciones de arriba para permitir ventanas emergentes en VuelaEle.");
+    alert("⚠️ Tu navegador ha bloqueado la ventana emergente. Permite los elementos emergentes para VuelaEle arriba en la barra de direcciones.");
     return;
   }
 
@@ -6139,14 +6138,17 @@ window.printAnyGameId = function(id) {
         <div class="content-box">
           ${contentHtml}
         </div>
-
-        <script>
-          window.onload = function() { window.print(); window.close(); };
-        </script>
       </body>
     </html>
   `);
+  
   printWindow.document.close();
+
+  // Lanzar la vista de impresión
+  setTimeout(function() {
+    printWindow.focus();
+    printWindow.print();
+  }, 300);
 };
   </script>
 </body>
