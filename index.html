@@ -755,6 +755,8 @@ function vGames(){
             <div class="game-sep"></div>
             <button class="game-action" onclick="openEditor('${a.id}')">${t("edit")}</button>
             <div class="game-sep"></div>
+<button class="game-action" style="color:#64748b" onclick="printAnyGame(S.activities.find(x=>x.id==='${a.id}'))">🖨️</button>
+            <div class="game-sep"></div>
             <button class="game-action" style="color:#FF4B4B" onclick="delGame('${a.id}')">🗑</button>
           </div>
         </div>`}).join("")}</div>`}
@@ -6073,6 +6075,57 @@ setTimeout(cargarDesdeNube, 600);
           location.reload(); // Esto recarga la página para mostrar los cambios al instante
       }
   }
+
+  // Función para imprimir o guardar en PDF cualquier juego de la biblioteca
+window.printAnyGame = function(game) {
+  const printWindow = window.open('', '_blank');
+  
+  let contentHtml = "";
+  if (game && game.data) {
+    if (typeof game.data === 'string') contentHtml = game.data;
+    else if (typeof game.data === 'object') contentHtml = game.data.texto || game.data.text || JSON.stringify(game.data);
+  } else if (game) {
+    contentHtml = game.texto || game.title || "Contenido del juego";
+  }
+
+  // Quita las marcas de asteriscos para que quede como un hueco de examen en papel
+  contentHtml = contentHtml.replace(/\*([^*]+)\*/g, ' _________ ');
+
+  printWindow.document.write(`
+    <!DOCTYPE html>
+    <html>
+      <head>
+        <title>VuelaEle - ${game ? (game.title || 'Ficha de Actividad') : 'Ficha'}</title>
+        <style>
+          body { font-family: 'Nunito', Arial, sans-serif; padding: 40px; color: #000; }
+          .header { border-bottom: 2px solid #000; padding-bottom: 15px; margin-bottom: 30px; }
+          .title { font-size: 24px; font-weight: bold; margin: 0 0 10px 0; }
+          .fields { display: flex; justify-content: space-between; font-weight: bold; margin-top: 20px; }
+          .content-box { border: 2px solid #000; padding: 30px; border-radius: 12px; font-size: 20px; line-height: 2.2; margin-top: 20px; }
+        </style>
+      </head>
+      <body>
+        <div class="header">
+          <div class="title">VuelaEle — ${game ? (game.title || 'Ficha de Actividad') : 'Ficha'}</div>
+          <div class="fields">
+            <span>Nombre del alumno: _____________________________________</span>
+            <span>Fecha: ____________</span>
+          </div>
+        </div>
+        
+        <h3>Instrucciones: Realiza el siguiente ejercicio en la hoja.</h3>
+        <div class="content-box">
+          ${contentHtml}
+        </div>
+
+        <script>
+          window.onload = function() { window.print(); window.close(); };
+        </script>
+      </body>
+    </html>
+  `);
+  printWindow.document.close();
+};
   </script>
 </body>
 </html>
