@@ -755,7 +755,7 @@ function vGames(){
             <div class="game-sep"></div>
             <button class="game-action" onclick="openEditor('${a.id}')">${t("edit")}</button>
             <div class="game-sep"></div>
-<button class="game-action" style="color:#64748b" onclick="printAnyGame(S.activities.find(x=>x.id==='${a.id}'))">🖨️</button>
+<button class="game-action" style="color:#64748b" onclick="printAnyGameId('${a.id}')">🖨️</button>
             <div class="game-sep"></div>
             <button class="game-action" style="color:#FF4B4B" onclick="delGame('${a.id}')">🗑</button>
           </div>
@@ -6076,26 +6076,48 @@ setTimeout(cargarDesdeNube, 600);
       }
   }
 
-  // Función para imprimir o guardar en PDF cualquier juego de la biblioteca
-window.printAnyGame = function(game) {
-  const printWindow = window.open('', '_blank');
+  // Función universal para imprimir/descargar cualquier juego por su ID
+window.printAnyGameId = function(id) {
+  // 1. Buscar el juego en la lista de actividades
+  let game = null;
+  if (typeof S !== 'undefined' && S.activities) {
+    game = S.activities.find(x => x.id == id);
+  }
   
-  let contentHtml = "";
-  if (game && game.data) {
-    if (typeof game.data === 'string') contentHtml = game.data;
-    else if (typeof game.data === 'object') contentHtml = game.data.texto || game.data.text || JSON.stringify(game.data);
-  } else if (game) {
-    contentHtml = game.texto || game.title || "Contenido del juego";
+  if (!game) {
+    alert("No se encontró el contenido de este juego.");
+    return;
   }
 
-  // Quita las marcas de asteriscos para que quede como un hueco de examen en papel
-  contentHtml = contentHtml.replace(/\*([^*]+)\*/g, ' _________ ');
+  // 2. Extraer el texto o contenido del juego
+  let contentHtml = "";
+  if (game.data) {
+    if (typeof game.data === 'string') {
+      contentHtml = game.data;
+    } else if (typeof game.data === 'object') {
+      contentHtml = game.data.texto || game.data.text || game.data.frase || game.data.palabras || JSON.stringify(game.data);
+    }
+  } else {
+    contentHtml = game.texto || game.frase || game.title || "Ejercicio interactivo";
+  }
+
+  // Limpiar asteriscos (*palabra* -> ________)
+  contentHtml = String(contentHtml).replace(/\*([^*]+)\*/g, ' _________ ');
+
+  // 3. Abrir ventana de impresión
+  const printWindow = window.open('', '_blank');
+  if (!printWindow) {
+    alert("⚠️ Tu navegador ha bloqueado la ventana emergente. Por favor, haz clic en el icono de bloqueo en la barra de direcciones de arriba para permitir ventanas emergentes en VuelaEle.");
+    return;
+  }
+
+  const title = game.title || game.nombre || 'Ficha de Actividad';
 
   printWindow.document.write(`
     <!DOCTYPE html>
     <html>
       <head>
-        <title>VuelaEle - ${game ? (game.title || 'Ficha de Actividad') : 'Ficha'}</title>
+        <title>VuelaEle - ${title}</title>
         <style>
           body { font-family: 'Nunito', Arial, sans-serif; padding: 40px; color: #000; }
           .header { border-bottom: 2px solid #000; padding-bottom: 15px; margin-bottom: 30px; }
@@ -6106,7 +6128,7 @@ window.printAnyGame = function(game) {
       </head>
       <body>
         <div class="header">
-          <div class="title">VuelaEle — ${game ? (game.title || 'Ficha de Actividad') : 'Ficha'}</div>
+          <div class="title">VuelaEle — ${title}</div>
           <div class="fields">
             <span>Nombre del alumno: _____________________________________</span>
             <span>Fecha: ____________</span>
