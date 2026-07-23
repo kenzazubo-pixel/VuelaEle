@@ -5790,42 +5790,45 @@ function gestionarBotonNube() {
 }
 
 function abrirPanelGemi() {
-  if (document.getElementById('panel-gemi')) return;
-
-  // Crear el panel con diseño de chat
-  const panel = document.createElement('div');
-  panel.id = 'panel-gemi';
-  panel.style = 'position:fixed; bottom:165px; left:25px; width:380px; height:500px; max-width:90vw; background:white; z-index:100000; border-radius:20px; box-shadow:0 10px 30px rgba(0,0,0,0.3); padding:15px; border:2px solid #8e44ad; display:flex; flex-direction:column; font-family:inherit;';
-
-  // Interfaz de Chat
-  panel.innerHTML = `
-    <style>
-      #gemi-chat-messages::-webkit-scrollbar { width: 4px; }
-      #gemi-chat-messages::-webkit-scrollbar-track { background: transparent; }
-      #gemi-chat-messages::-webkit-scrollbar-thumb { background: #ddd; border-radius: 10px; }
-    </style>
-
-    <!-- Cabecera -->
-    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; border-bottom:1px solid #eee; padding-bottom:8px;">
-      <span style="font-weight:bold; color:#8e44ad; font-size:15px;">✨ Gemi - Asistente Pedagógico</span>
-      <button onclick="document.getElementById('panel-gemi').remove()" style="background:none; border:none; font-size:18px; cursor:pointer; color:#999; padding:0 5px;">✕</button>
-    </div>
-    
-    <!-- Historial de mensajes -->
-    <div id="gemi-chat-messages" style="flex-grow:1; overflow-y:auto; padding:5px; display:flex; flex-direction:column; gap:10px; margin-bottom:10px; font-size:13px; line-height:1.4;">
-      <div style="background:#f1f0f0; color:#333; padding:10px 14px; border-radius:15px 15px 15px 0px; align-self:flex-start; max-width:85%;">
-        ¡Hola, Azucena! Soy tu asistente de IA para <strong>VuelaEle</strong>. ¿En qué te puedo ayudar hoy con tus clases de español? 🚀
+  let modal = document.getElementById('profeGemiModal');
+  if (!modal) {
+    modal = document.createElement('div');
+    modal.id = 'profeGemiModal';
+    modal.style.cssText = `
+      position: fixed; bottom: 85px; left: 20px; width: 380px; max-width: 90vw;
+      height: 500px; max-height: 75vh; background: rgba(15, 23, 42, 0.95);
+      border: 1px solid rgba(168, 85, 247, 0.5); border-radius: 20px;
+      box-shadow: 0 20px 40px rgba(0,0,0,0.8), 0 0 20px rgba(168,85,247,0.2);
+      backdrop-filter: blur(12px); color: #f8fafc; display: flex; flex-direction: column;
+      overflow: hidden; z-index: 99999; font-family: 'Nunito', sans-serif;
+    `;
+    modal.innerHTML = `
+      <!-- Encabezado Morado -->
+      <div style="background: linear-gradient(135deg, #7c3aed, #c084fc); padding: 14px 18px; display: flex; justify-content: space-between; align-items: center;">
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <span style="font-size: 20px;">✨</span>
+          <strong style="font-size: 15px; color: white;">ProfeGemi AI</strong>
+        </div>
+        <button onclick="abrirPanelGemi()" style="background: rgba(255,255,255,0.2); border: none; color: white; border-radius: 50%; width: 26px; height: 26px; cursor: pointer; font-weight: bold; display: flex; align-items: center; justify-content: center;">✕</button>
       </div>
-    </div>
-    
-    <!-- Entrada de texto -->
-    <div style="display:flex; gap:8px; border-top:1px solid #eee; padding-top:10px;">
-      <input type="text" id="gemi-chat-input" placeholder="Escribe tu consulta pedagógica..." style="flex-grow:1; padding:10px 14px; border:1px solid #ddd; border-radius:20px; outline:none; font-size:13px;" onkeypress="if(event.key==='Enter') enviarMensajeGemi()">
-      <button onclick="enviarMensajeGemi()" style="background:#8e44ad; color:white; border:none; padding:8px 16px; border-radius:20px; cursor:pointer; font-weight:bold; font-size:13px; transition:0.2s;" onmouseover="this.style.background='#732d91'" onmouseout="this.style.background='#8e44ad'">Enviar</button>
-    </div>
-  `;
 
-  document.body.appendChild(panel);
+      <!-- Chat -->
+      <div id="gemiChatBox" style="flex: 1; padding: 15px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; font-size: 13px;">
+        <div style="background: rgba(255,255,255,0.07); border-left: 3px solid #c084fc; padding: 10px 14px; border-radius: 10px; color: #e2e8f0; line-height: 1.4;">
+          ¡Hola, Azucena! 🦅 Soy tu asistente de IA para <strong>VuelaEle</strong>. ¿En qué te puedo ayudar hoy con tus clases de ELE?
+        </div>
+      </div>
+
+      <!-- Escribir mensaje -->
+      <div style="padding: 12px; background: rgba(0,0,0,0.4); display: flex; gap: 8px; border-top: 1px solid rgba(255,255,255,0.1);">
+        <input type="text" id="gemiInput" placeholder="Escribe tu consulta pedagógica..." onkeypress="if(event.key==='Enter') sendGemiMsg()" style="flex: 1; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.15); border-radius: 10px; padding: 10px 12px; color: white; outline: none; font-size: 13px;">
+        <button onclick="sendGemiMsg()" style="background: #a855f7; border: none; color: white; padding: 0 16px; border-radius: 10px; font-weight: bold; cursor: pointer;">Enviar</button>
+      </div>
+    `;
+    document.body.appendChild(modal);
+  } else {
+    modal.style.display = modal.style.display === 'none' ? 'flex' : 'none';
+  }
 }
 // Función para gestionar los mensajes que envías
 window.enviarMensajeGemi = async function() {
@@ -6350,9 +6353,8 @@ const PROFE_GEMI_KEY = "AIzaSyCxZkZ5d-yMyiUZFMxQh03vQrUlfbRu12I..."; // <-- Pega
 
 // Función conectada a Gemini
 async function askProfeGemi(promptText) {
-  if (!PROFE_GEMI_KEY || PROFE_GEMI_KEY === "TU_API_KEY_AQUI") {
-    alert("⚠️ Falta pegar la API Key en el código.");
-    return null;
+  if (!PROFE_GEMI_KEY || PROFE_GEMI_KEY.includes("TU_API_KEY")) {
+    return "⚠️ Falta configurar la API Key en el archivo index.html.";
   }
 
   const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${PROFE_GEMI_KEY}`;
@@ -6364,17 +6366,24 @@ async function askProfeGemi(promptText) {
       body: JSON.stringify({
         contents: [{
           parts: [{ 
-            text: "Eres ProfeGemi, un asistente pedagógico de ELE cercano y creativo. Ayuda al profesor con esta consulta:\n\n" + promptText 
+            text: "Eres ProfeGemi, asistente experto en ELE de VuelaEle. Responde de forma concisa, útil y cercana:\n\n" + promptText 
           }]
         }]
       })
     });
 
     const data = await response.json();
-    return data.candidates?.[0]?.content?.parts?.[0]?.text || "No se pudo obtener respuesta.";
-  } catch (error) {
-    console.error("Error en ProfeGemi:", error);
-    return "Error de conexión con la IA.";
+
+    if (data.error) {
+      console.error("Error de la API de Google:", data.error);
+      return `⚠️ Error de conexión (${data.error.message || 'Clave no válida'}). Asegúrate de tener habilitada la API Generative Language.`;
+    }
+
+    return data.candidates?.[0]?.content?.parts?.[0]?.text || "No recibí respuesta.";
+
+  } catch (err) {
+    console.error("Error de red:", err);
+    return "Error de red al intentar contactar con ProfeGemi.";
   }
 }
   </script>
