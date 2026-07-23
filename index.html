@@ -6345,6 +6345,38 @@ window.printAnyGameId = function(id) {
     printWindow.print();
   }, 300);
 };
+// Clave para dar vida a ProfeGemi
+const PROFE_GEMI_KEY = "AIzaSyCxZkZ5d-yMyiUZFMxQh03vQrUlfbRu12I..."; // <-- Pega tu API Key completa aquí sin saltos de línea
+
+// Función conectada a Gemini
+async function askProfeGemi(promptText) {
+  if (!PROFE_GEMI_KEY || PROFE_GEMI_KEY === "TU_API_KEY_AQUI") {
+    alert("⚠️ Falta pegar la API Key en el código.");
+    return null;
+  }
+
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${PROFE_GEMI_KEY}`;
+
+  try {
+    const response = await fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        contents: [{
+          parts: [{ 
+            text: "Eres ProfeGemi, un asistente pedagógico de ELE cercano y creativo. Ayuda al profesor con esta consulta:\n\n" + promptText 
+          }]
+        }]
+      })
+    });
+
+    const data = await response.json();
+    return data.candidates?.[0]?.content?.parts?.[0]?.text || "No se pudo obtener respuesta.";
+  } catch (error) {
+    console.error("Error en ProfeGemi:", error);
+    return "Error de conexión con la IA.";
+  }
+}
   </script>
 </body>
 </html>
