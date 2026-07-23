@@ -3960,7 +3960,7 @@ function pSpotError(a, ps) {
     `;
   }
 
-  // 2. Inicialización del juego interactivo (1 sola vez)
+  // 2. Inicialización del juego interactivo
   if (!ps.isGameInitialized) {
     const tokenRegex = /(\*[^*]+\*|\S+|\s+)/g;
     const matches = rawData.match(tokenRegex) || [rawData];
@@ -4043,7 +4043,12 @@ function pSpotError(a, ps) {
     if (typeof render === 'function') render();
   };
 
-  // 4. Renderizado del texto interactivo (LETRAS OSCURAS Y ALTO CONTRASTE)
+  // Función para abrir la impresión / descargar PDF
+  window.printGameWorksheet = function() {
+    window.print();
+  };
+
+  // 4. Renderizado del texto interactivo
   let renderedTextHtml = ps.tokens.map((t, i) => {
     if (!t.isError && !t.display.trim()) return t.display;
     
@@ -4064,10 +4069,10 @@ function pSpotError(a, ps) {
   if (ps.selectedIndex !== null) {
     const selToken = ps.tokens[ps.selectedIndex];
     if (selToken.solved) {
-      activeBox = `<p style="color:#059669; font-weight:800; margin:15px 0;">¡Esta palabra ya ha sido corregida!</p>`;
+      activeBox = `<p class="no-print" style="color:#059669; font-weight:800; margin:15px 0;">¡Esta palabra ya ha sido corregida!</p>`;
     } else {
       activeBox = `
-        <div style="background:#f1f5f9; padding:16px; border-radius:14px; margin:15px 0; border:2px solid #cbd5e1; color:#0f172a;">
+        <div class="no-print" style="background:#f1f5f9; padding:16px; border-radius:14px; margin:15px 0; border:2px solid #cbd5e1; color:#0f172a;">
           <p style="margin:0 0 10px 0; font-size:15px; color:#334155; font-weight:700;">Has marcado: <strong style="color:#b45309; font-size:18px;">"${selToken.display.trim()}"</strong></p>
           <div style="display:flex; gap:10px; justify-content:center; max-width:400px; margin:0 auto;">
             <input id="spot-corr-input" type="text" placeholder="Escribe la corrección..." style="padding:10px 14px; border-radius:10px; border:2px solid #94a3b8; font-size:15px; flex:1; text-align:center; outline:none; background:#ffffff; color:#0f172a; font-weight:700;" onkeydown="if(event.key==='Enter') submitSpotCorrection()" autofocus />
@@ -4077,29 +4082,62 @@ function pSpotError(a, ps) {
       `;
     }
   } else {
-    activeBox = `<p style="font-size:14px; color:#64748b; font-style:italic; margin:15px 0; font-weight:600;">Haz clic sobre la palabra del texto que creas que contiene un error.</p>`;
+    activeBox = `<p class="no-print" style="font-size:14px; color:#64748b; font-style:italic; margin:15px 0; font-weight:600;">Haz clic sobre la palabra del texto que creas que contiene un error.</p>`;
   }
 
   const isAllSolved = ps.score === ps.totalErrors;
 
   return `
-    <div style="max-width:580px; margin:0 auto; padding:20px; text-align:center; color:#1e293b; font-family:'Nunito', sans-serif;">
-      <div style="font-size:13px; color:#475569; margin-bottom:12px; font-weight:800; letter-spacing:0.5px;">CORRIGE LOS ERRORES DEL TEXTO</div>
+    <!-- ESTILOS ESPECIALES PARA IMPRESIÓN / PDF -->
+    <style>
+      @media print {
+        body * { visibility: hidden; }
+        .printable-area, .printable-area * { visibility: visible; }
+        .printable-area { position: absolute; left: 0; top: 0; width: 100%; color: #000 !important; }
+        .no-print { display: none !important; }
+        .print-header { display: block !important; margin-bottom: 25px; border-bottom: 2px solid #000; padding-bottom: 10px; }
+        .print-box { border: 2px solid #000 !important; background: #fff !important; color: #000 !important; font-size: 22px !important; line-height: 2.5 !important; }
+      }
+      .print-header { display: none; }
+    </style>
+
+    <div class="printable-area" style="max-width:580px; margin:0 auto; padding:20px; text-align:center; color:#1e293b; font-family:'Nunito', sans-serif;">
       
-      <!-- CUADRO PRINCIPAL DE TEXTO (OSCURO SOBRE FONDO CLARO) -->
-      <div style="background:#f8fafc; padding:22px; border-radius:16px; border:2px solid #e2e8f0; line-height:2.2; font-size:19px; font-weight:700; color:#0f172a; text-align:center; box-shadow:0 2px 10px rgba(0,0,0,0.03);">
+      <!-- CABECERA SOLO PARA HOJA IMPRESA -->
+      <div class="print-header" style="text-align:left;">
+        <h2 style="margin:0; font-size:22px; color:#000;">VuelaEle — Ficha de Actividad</h2>
+        <p style="margin:5px 0 15px 0; font-size:14px; color:#333;"><strong>Instrucciones:</strong> Encuentra las ${ps.totalErrors} palabras incorrectas del texto y escribe la versión correcta.</p>
+        <div style="display:flex; justify-content:space-between; font-size:14px; font-weight:bold; color:#000;">
+          <span>Nombre del alumno: _____________________________________</span>
+          <span>Fecha: ____________</span>
+        </div>
+      </div>
+
+      <!-- TÍTULO EN PANTALLA -->
+      <div class="no-print" style="font-size:13px; color:#475569; margin-bottom:12px; font-weight:800; letter-spacing:0.5px;">CORRIGE LOS ERRORES DEL TEXTO</div>
+      
+      <!-- CUADRO PRINCIPAL DE TEXTO -->
+      <div class="print-box" style="background:#f8fafc; padding:22px; border-radius:16px; border:2px solid #e2e8f0; line-height:2.2; font-size:19px; font-weight:700; color:#0f172a; text-align:center; box-shadow:0 2px 10px rgba(0,0,0,0.03);">
         ${renderedTextHtml}
       </div>
 
       ${activeBox}
 
-      <p style="font-size:14px; color:#475569; font-weight:700; margin-top:0; margin-bottom:15px;">Total errores: ${ps.score} / ${ps.totalErrors} corregidos.</p>
+      <p class="no-print" style="font-size:14px; color:#475569; font-weight:700; margin-top:0; margin-bottom:15px;">Total errores: ${ps.score} / ${ps.totalErrors} corregidos.</p>
 
-      ${isAllSolved ? `<div style="background:#dcfce7; color:#15803d; border:2px solid #86efac; padding:12px; border-radius:12px; font-weight:800; margin-bottom:15px; font-size:16px;">¡Impresionante! Has corregido todos los errores del texto. 🎉</div>` : ''}
+      ${isAllSolved ? `<div class="no-print" style="background:#dcfce7; color:#15803d; border:2px solid #86efac; padding:12px; border-radius:12px; font-weight:800; margin-bottom:15px; font-size:16px;">¡Impresionante! Has corregido todos los errores del texto. 🎉</div>` : ''}
 
-      <button onclick="if(typeof finish === 'function') finish(ps.score, ps.totalErrors);" ${!isAllSolved ? 'disabled' : ''} style="width:100%; padding:14px; border-radius:12px; background:#1cb0f6; border:none; color:#ffffff; font-weight:900; font-size:16px; cursor:${isAllSolved ? 'pointer' : 'default'}; opacity:${isAllSolved ? 1 : 0.4}; box-shadow:0 4px 0 #1890c6;">
-        Siguiente ejercicio
-      </button>
+      <!-- BOTONES DE ACCIÓN (SÓLO VISIBLES EN PANTALLA) -->
+      <div class="no-print" style="display:flex; gap:10px; flex-direction:column;">
+        <button onclick="printGameWorksheet()" style="width:100%; padding:12px; border-radius:12px; background:#64748b; border:none; color:#ffffff; font-weight:800; font-size:15px; cursor:pointer; box-shadow:0 3px 0 #475569; display:flex; align-items:center; justify-content:center; gap:8px;">
+          🖨️ Imprimir / Descargar en PDF
+        </button>
+
+        <button onclick="if(typeof finish === 'function') finish(ps.score, ps.totalErrors);" ${!isAllSolved ? 'disabled' : ''} style="width:100%; padding:14px; border-radius:12px; background:#1cb0f6; border:none; color:#ffffff; font-weight:900; font-size:16px; cursor:${isAllSolved ? 'pointer' : 'default'}; opacity:${isAllSolved ? 1 : 0.4}; box-shadow:0 4px 0 #1890c6;">
+          Siguiente ejercicio
+        </button>
+      </div>
+
     </div>
   `;
 }
