@@ -6357,7 +6357,7 @@ async function askProfeGemi(promptText) {
     return "⚠️ Falta configurar la API Key en el archivo index.html.";
   }
 
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${PROFE_GEMI_KEY}`;
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${PROFE_GEMI_KEY}`;
 
   try {
     const response = await fetch(url, {
