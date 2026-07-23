@@ -6076,7 +6076,7 @@ setTimeout(cargarDesdeNube, 600);
       }
   }
 
-  // Función universal para imprimir cualquier juego por su ID
+  // Función universal adaptativa para imprimir cualquier juego en formato ficha
 window.printAnyGameId = function(id) {
   let game = null;
   if (typeof S !== 'undefined' && S.activities) {
@@ -6088,29 +6088,92 @@ window.printAnyGameId = function(id) {
     return;
   }
 
-  // Extraer contenido del juego
-  let contentHtml = "";
-  if (game.data) {
-    if (typeof game.data === 'string') {
-      contentHtml = game.data;
-    } else if (typeof game.data === 'object') {
-      contentHtml = game.data.texto || game.data.text || game.data.frase || game.data.palabras || JSON.stringify(game.data);
+  const title = game.title || game.nombre || 'Ficha de Actividad';
+  const type = (game.type || game.gameType || game.modo || '').toLowerCase();
+  const d = game.data || {};
+
+  let bodyHtml = "";
+
+  // 1. SOPA DE LETRAS (Genera la cuadrícula y las palabras a buscar)
+  if (type.includes('sopa') || type.includes('wordsearch') || d.grid) {
+    let gridHtml = "";
+    if (d.grid && Array.isArray(d.grid)) {
+      gridHtml = `<table class="ws-grid">` + 
+        d.grid.map(row => `<tr>` + (Array.isArray(row) ? row : String(row).split('')).map(c => `<td>${c.toUpperCase()}</td>`).join('') + `</tr>`).join('') + 
+        `</table>`;
     }
-  } else {
-    contentHtml = game.texto || game.frase || game.title || "Ejercicio interactivo";
+    
+    let words = d.words || d.palabras || [];
+    if (typeof words === 'string') words = words.split(',').map(w => w.trim());
+    
+    let wordsHtml = words.length ? `
+      <div class="bank-section">
+        <strong>🔍 Palabras a buscar:</strong>
+        <div class="chips-container">${words.map(w => `<span class="chip">${w.toUpperCase()}</span>`).join('')}</div>
+      </div>` : '';
+
+    bodyHtml = gridHtml + wordsHtml;
+  } 
+  // 2. CATEGORIZAR (Genera las palabras y las cajas delimitadas para clasificar)
+  else if (type.includes('cat') || d.categories || d.categorias) {
+    let cats = d.categories || d.categorias || [];
+    let items = d.items || d.elementos || d.words || [];
+
+    let itemsHtml = `
+      <div class="bank-section">
+        <strong>📋 Clasifica los siguientes elementos en su categoría correspondiente:</strong>
+        <div class="chips-container">${items.map(i => `<span class="chip">${typeof i === 'object' ? (i.text || i.nombre) : i}</span>`).join('')}</div>
+      </div>`;
+    
+    let catsHtml = `<div class="cat-grid">` + 
+      cats.map(c => `
+        <div class="cat-box">
+          <div class="cat-title">${typeof c === 'object' ? (c.title || c.nombre) : c}</div>
+        </div>`).join('') + 
+      `</div>`;
+
+    bodyHtml = itemsHtml + catsHtml;
+  } 
+  // 3. ORDENAR (Genera las fichas desordenadas y líneas para escribir)
+  else if (type.includes('orden') || type.includes('sort')) {
+    let words = d.words || d.palabras || [];
+    if (typeof words === 'string') words = words.split(' ');
+    
+    let wordsHtml = `
+      <div class="bank-section">
+        <strong>🧩 Ordena las siguientes palabras para formar la frase correcta:</strong>
+        <div class="chips-container">${words.map(w => `<span class="chip">${w}</span>`).join('')}</div>
+      </div>`;
+    
+    let answerLines = `
+      <div style="margin-top:40px;">
+        <strong>Respuesta:</strong>
+        <div class="write-lines"></div>
+        <div class="write-lines"></div>
+      </div>`;
+
+    bodyHtml = wordsHtml + answerLines;
+  } 
+  // 4. COMPLETAR / CORRIGE EL ERROR / TEXTO LIBRE
+  else {
+    let contentHtml = "";
+    if (typeof d === 'string') contentHtml = d;
+    else if (typeof d === 'object') contentHtml = d.texto || d.text || d.frase || JSON.stringify(d);
+    else contentHtml = game.texto || game.frase || "Ejercicio interactivo";
+
+    contentHtml = String(contentHtml).replace(/\*([^*]+)\*/g, ' _________ ');
+
+    bodyHtml = `
+      <h3>Instrucciones: Realiza el siguiente ejercicio en la hoja.</h3>
+      <div class="content-box">${contentHtml}</div>`;
   }
 
-  // Convertir marcas como *palabra* en huecos para rellenar
-  contentHtml = String(contentHtml).replace(/\*([^*]+)\*/g, ' _________ ');
-
-  // Abrir ventana limpia
+  // Abrir ventana de impresión con estilos listos para papel
   const printWindow = window.open('', '_blank');
   if (!printWindow) {
-    alert("⚠️ Tu navegador ha bloqueado la ventana emergente. Permite los elementos emergentes para VuelaEle arriba en la barra de direcciones.");
+    alert("⚠️ Tu navegador ha bloqueado la ventana emergente. Por favor permítela arriba en la barra de direcciones.");
     return;
   }
-
-  const title = game.title || game.nombre || 'Ficha de Actividad';
 
   printWindow.document.write(`
     <!DOCTYPE html>
@@ -6119,10 +6182,29 @@ window.printAnyGameId = function(id) {
         <title>VuelaEle - ${title}</title>
         <style>
           body { font-family: 'Nunito', Arial, sans-serif; padding: 40px; color: #000; }
-          .header { border-bottom: 2px solid #000; padding-bottom: 15px; margin-bottom: 30px; }
+          .header { border-bottom: 2px solid #000; padding-bottom: 15px; margin-bottom: 25px; }
           .title { font-size: 24px; font-weight: bold; margin: 0 0 10px 0; }
-          .fields { display: flex; justify-content: space-between; font-weight: bold; margin-top: 20px; }
-          .content-box { border: 2px solid #000; padding: 30px; border-radius: 12px; font-size: 20px; line-height: 2.2; margin-top: 20px; }
+          .fields { display: flex; justify-content: space-between; font-weight: bold; margin-top: 15px; }
+          
+          /* Sopa de Letras */
+          .ws-grid { border-collapse: collapse; margin: 25px auto; }
+          .ws-grid td { border: 2px solid #1e293b; width: 34px; height: 34px; text-align: center; font-weight: bold; font-size: 18px; font-family: monospace; text-transform: uppercase; }
+          
+          /* Bancos de fichas / palabras */
+          .bank-section { background: #f8fafc; border: 2px solid #cbd5e1; padding: 18px; border-radius: 10px; margin-bottom: 25px; }
+          .chips-container { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 12px; }
+          .chip { border: 2px solid #000; padding: 6px 14px; border-radius: 20px; font-weight: bold; font-size: 16px; background: #fff; }
+          
+          /* Cajas de Categorías */
+          .cat-grid { display: flex; gap: 20px; margin-top: 20px; }
+          .cat-box { flex: 1; min-height: 250px; border: 2px dashed #000; border-radius: 12px; padding: 12px; }
+          .cat-title { text-align: center; font-weight: bold; font-size: 18px; border-bottom: 2px solid #000; padding-bottom: 8px; text-transform: uppercase; }
+          
+          /* Líneas de escritura */
+          .write-lines { border-bottom: 2px solid #000; height: 40px; margin-top: 15px; }
+          
+          /* Caja de Texto Libre */
+          .content-box { border: 2px solid #000; padding: 25px; border-radius: 12px; font-size: 20px; line-height: 2.2; margin-top: 15px; }
         </style>
       </head>
       <body>
@@ -6134,17 +6216,13 @@ window.printAnyGameId = function(id) {
           </div>
         </div>
         
-        <h3>Instrucciones: Realiza el siguiente ejercicio en la hoja.</h3>
-        <div class="content-box">
-          ${contentHtml}
-        </div>
+        ${bodyHtml}
       </body>
     </html>
   `);
   
   printWindow.document.close();
 
-  // Lanzar la vista de impresión
   setTimeout(function() {
     printWindow.focus();
     printWindow.print();
