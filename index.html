@@ -4508,7 +4508,7 @@ function pRoulette(a,ps){
   if(!ps.rot)ps.rot=0;if(ps.spinning===undefined)ps.spinning=false;
   const n=ps.active.length;const sz=380;const cx=sz/2,cy=sz/2,r=sz/2-12;
   let sectors="";
-  if(n>0){const step=360/n;ps.active.forEach((opt,i)=>{const s=i*step,e=(i+1)*step,mid=(s+e)/2;const sr=s*Math.PI/180,er=e*Math.PI/180;const x1=cx+r*Math.sin(sr),y1=cy-r*Math.cos(sr),x2=cx+r*Math.sin(er),y2=cy-r*Math.cos(er);const large=step>180?1:0;const lr=mid*Math.PI/180,dist=r*.65;sectors+=`<path d="M${cx},${cy} L${x1},${y1} A${r},${r} 0 ${large},1 ${x2},${y2} Z" fill="${COLORS[i%COLORS.length]}" stroke="#fff" stroke-width="1.5"/><text x="${cx+dist*Math.sin(lr)}" y="${cy-dist*Math.cos(lr)}" text-anchor="middle" dominant-baseline="middle" fill="#fff" font-size="${Math.min(11,80/n+4)}" font-weight="900" transform="rotate(${mid},${cx+dist*Math.sin(lr)},${cy-dist*Math.cos(lr)})">${opt.slice(0,8)}</text>`})}
+  if(n>0){const step=360/n;ps.active.forEach((opt,i)=>{const s=i*step,e=(i+1)*step,mid=(s+e)/2;const sr=s*Math.PI/180,er=e*Math.PI/180;const x1=cx+r*Math.sin(sr),y1=cy-r*Math.cos(sr),x2=cx+r*Math.sin(er),y2=cy-r*Math.cos(er);const large=step>180?1:0;const lr=mid*Math.PI/180,dist=r*.65;sectors+=`<path d="M${cx},${cy} L${x1},${y1} A${r},${r} 0 ${large},1 ${x2},${y2} Z" fill="${COLORS[i%COLORS.length]}" stroke="#fff" stroke-width="1.5"/><text x="${cx+dist*Math.sin(lr)}" y="${cy-dist*Math.cos(lr)}" text-anchor="middle" dominant-baseline="middle" fill="#fff" font-size="${Math.min(17,120/n+6)}" font-weight="900" transform="rotate(${mid},${cx+dist*Math.sin(lr)},${cy-dist*Math.cos(lr)})">${opt.slice(0,8)}</text>`})}
   return`<div class="roulette-wrap"><span class="tag tag-red" style="margin-bottom:12px;display:inline-block">🎡 ${n} opciones</span><div style="position:relative;display:inline-block"><div style="position:absolute;left:50%;top:-4px;transform:translateX(-50%);width:0;height:0;border-left:8px solid transparent;border-right:8px solid transparent;border-top:16px solid #0F1B3D;z-index:10"></div><svg id="rl-svg" viewBox="0 0 ${sz} ${sz}" width="${sz}" height="${sz}" style="display:block;border-radius:50%;border:6px solid #0F1B3D;box-shadow:0 10px 25px rgba(0,0,0,0;3)transition:${ps.spinning?"transform 3.8s cubic-bezier(0.12,0.8,0.15,1)":"none"};transform:rotate(${ps.rot}deg)">${sectors}<circle cx="${cx}" cy="${cy}" r="10" fill="#fff" stroke="#0F1B3D" stroke-width="2"/></svg></div>${ps.picked?`<div style="margin-top:14px"><div style="display:inline-block;background:#FFE8C7;color:#A06400;padding:12px 24px;border-radius:14px;font-size:20px;font-weight:900;border-bottom:4px solid #FF9600;margin-bottom:12px">${ps.picked}</div><div style="display:flex;justify-content:center;gap:10px"><button class="btn btn-red" onclick="rlRm()">🗑 Eliminar</button><button class="btn btn-green" onclick="rlKeep()">✓ Siguiente</button></div></div>`:""}<div style="display:flex;justify-content:center;gap:10px;margin-top:14px"><button class="btn btn-red btn-lg" onclick="rlSpin()" ${ps.spinning||n===0?"disabled":""}>🎡 Girar</button><button class="btn btn-white" onclick="finish(${(a.data.options||[]).length-n},${(a.data.options||[]).length||1})">Terminar</button></div>${n===0?`<p style="color:#FF4B4B;font-weight:900;margin-top:8px">¡Todas eliminadas!</p>`:""}</div>`;
 }
 function rlSpin() {
@@ -4568,9 +4568,52 @@ function rlSpin() {
 function rlRm(){const ps=S.pState;ps.active=ps.active.filter(o=>o!==ps.picked);ps.picked=null;ps.rot=0;render()}
 function rlKeep(){S.pState.picked=null;render()}
 
-function pMystery(a,ps){
-  const boxes=a.data.boxes||[];if(!ps.opened)ps.opened=[];
-  return`<div style="text-align:center"><span class="tag tag-orange" style="margin-bottom:14px;display:inline-block">🎁 ${ps.opened.length}/${boxes.length} abiertas</span><div class="mystery-grid">${boxes.map((b,i)=>`<button style="padding:24px 16px;border-radius:16px;border:none;cursor:pointer;font-size:14px;font-weight:900;text-align:center;transition:.15s;border-bottom:4px solid;background:${ps.opened.includes(i)?"#D7FFB8":"#FFE8C7"};border-color:${ps.opened.includes(i)?"#58CC02":"#FF9600"};color:${ps.opened.includes(i)?"#3C8200":"#A06400"};font-family:'Nunito',sans-serif" onclick="openBox(${i})"><div style="font-size:36px;margin-bottom:8px">${ps.opened.includes(i)?"🎉":"🎁"}</div><div>${ps.opened.includes(i)?b.r:(b.l||`Caja ${i+1}`)}</div></button>`).join("")}</div><div style="margin-top:16px"><button class="btn btn-green btn-lg" onclick="finish(${ps.opened?.length||0}*50,${boxes.length}*50)" ${(ps.opened?.length||0)===0?"disabled":""}>Ver resultados</button></div></div>`;
+function pMystery(a, ps) {
+  const boxes = a.data.boxes || a.data.options || [];
+  if (!ps.opened) ps.opened = [];
+
+  // Paleta de colores vivos y llamativos para cada caja
+  const palette = ['#FF5964', '#35A7FF', '#FFC857', '#06D6A0', '#9B5DE5', '#F15BB5', '#FF9F1C', '#00BBF9'];
+
+  let gridHtml = '';
+  boxes.forEach((box, i) => {
+    const isOpen = ps.opened.includes(i);
+    const color = palette[i % palette.length];
+
+    if (isOpen) {
+      gridHtml += `
+        <div style="background: #ffffff; border: 3px solid ${color}; border-radius: 16px; padding: 20px 12px; text-align: center; box-shadow: 0 8px 20px rgba(0,0,0,0.08); animation: popIn 0.3s ease;">
+          <div style="font-size: 32px; margin-bottom: 6px;">✨</div>
+          <div style="font-weight: 800; font-size: 17px; color: #0F1B3D; word-break: break-word;">${box}</div>
+        </div>`;
+    } else {
+      gridHtml += `
+        <div onclick="openMysteryBox(${i})" 
+             style="background: linear-gradient(135deg, ${color}, ${color}DD); border-radius: 16px; padding: 20px 10px; text-align: center; cursor: pointer; box-shadow: 0 8px 18px rgba(0,0,0,0.15); transition: transform 0.2s ease, box-shadow 0.2s ease; color: white;" 
+             onmouseover="this.style.transform='translateY(-6px)'" 
+             onmouseout="this.style.transform='translateY(0)'">
+          <div style="font-size: 40px; margin-bottom: 6px; filter: drop-shadow(0 4px 6px rgba(0,0,0,0.2));">🎁</div>
+          <div style="font-weight: 900; font-size: 15px; text-shadow: 0 2px 4px rgba(0,0,0,0.2);">Caja ${i + 1}</div>
+        </div>`;
+    }
+  });
+
+  return `
+    <div style="max-width: 750px; margin: 0 auto; padding: 10px;">
+      <div style="margin-bottom: 18px; text-align: center;">
+        <span class="tag tag-amber" style="font-size: 14px; padding: 6px 14px;">🎁 ${ps.opened.length} / ${boxes.length} ABIERTAS</span>
+      </div>
+      
+      <!-- Cuadrícula responsive de 3 o 4 columnas -->
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 16px; margin-bottom: 24px;">
+        ${gridHtml}
+      </div>
+
+      <div style="display: flex; justify-content: center; gap: 12px;">
+        <button class="btn btn-green" onclick="finish(${boxes.length})">Ver resultados</button>
+      </div>
+    </div>
+  `;
 }
 function openBox(i){const ps=S.pState;if(!ps.opened.includes(i)){ps.opened.push(i);render()}}
 
