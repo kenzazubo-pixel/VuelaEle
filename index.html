@@ -6493,6 +6493,12 @@ function playSound(type) {
     console.warn("Audio no soportado o bloqueado", e);
   }
 }
+// Detecta clics en todos los botones de la web automáticamente
+document.addEventListener('click', (e) => {
+  if (e.target.closest('button, .btn, [role="button"], select, .tab')) {
+    playSound('click');
+  }
+});
   </script>
 </body>
 </html>
