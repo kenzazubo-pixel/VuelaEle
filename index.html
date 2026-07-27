@@ -3497,7 +3497,28 @@ function openEditor(id){
   else{S.edAct=null;S.edType="quiz";S.edData=defData("quiz")}
   S.view="editor";render();
 }
-function delGame(id){if(!confirm("¿Borrar este juego?"))return;S.activities=S.activities.filter(a=>a.id!==id);save();render()}
+function delGame(e, id) {
+  // 1. Evitar que el clic abra la tarjeta del juego
+  if (e && typeof e.stopPropagation === 'function') {
+    e.stopPropagation();
+  }
+  
+  // Soporte por si se llama solo con el id: delGame('123')
+  const targetId = (typeof e === 'string' || typeof e === 'number') ? e : id;
+
+  if (!confirm("¿Borrar este juego?")) return;
+
+  // 2. Eliminar de la lista de actividades
+  S.activities = (S.activities || []).filter(a => a.id !== targetId);
+
+  // 3. Guardar cambios (probando ambos métodos para evitar errores)
+  if (typeof guardarEnNube === 'function') guardarEnNube();
+  if (typeof save === 'function') save();
+  if (typeof notify === 'function') notify("Juego eliminado");
+
+  // 4. Refrescar la pantalla
+  render();
+}
 function pickMode(id){S.play=S.activities.find(a=>a.id===id);S.view="modepick";render()}
 
 function vEditor(){
@@ -4579,8 +4600,23 @@ function pMystery(a, ps) {
     const isOpen = ps.opened.includes(i);
     const color = palette[i % palette.length];
     
-    // Extrae el texto real si la caja es un objeto {text: '...'} o una cadena simple
-    const boxText = typeof box === 'object' ? (box.text || box.content || box.val || box.label || Object.values(box)[0] || '') : box;
+    // Extraer el texto real evitando los títulos tipo "Caja 1", "Caja 2"
+    let boxText = '';
+    if (typeof box === 'string' || typeof box === 'number') {
+      boxText = box;
+    } else if (box && typeof box === 'object') {
+      const priorityKeys = ['content', 'text', 'val', 'value', 'prompt', 'desc', 'q', 'a', 'question', 'answer'];
+      for (const k of priorityKeys) {
+        if (box[k] && typeof box[k] === 'string' && !/^caja\s*\d+/i.test(box[k].trim())) {
+          boxText = box[k];
+          break;
+        }
+      }
+      if (!boxText) {
+        const vals = Object.values(box).filter(v => typeof v === 'string');
+        boxText = vals.find(v => !/^caja\s*\d+/i.test(v.trim())) || vals[0] || '';
+      }
+    }
 
     if (isOpen) {
       gridHtml += `
