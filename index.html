@@ -804,7 +804,7 @@ function vGames(){
             🖨️
           </button>
           <div class="game-sep" style="width:1px; height:16px; background:rgba(255,255,255,0.2);"></div>
-          <button class="game-action" style="color:#FF4B4B; background:none; border:none; cursor:pointer;" onclick="delGame('${a.id}')">
+          <button class="game-action" style="color:#FF4B4B; background:none; border:none; cursor:pointer;" onclick="delGame(event,'${a.id}')">
             🗑️
           </button>
         </div>
@@ -3497,28 +3497,34 @@ function openEditor(id){
   else{S.edAct=null;S.edType="quiz";S.edData=defData("quiz")}
   S.view="editor";render();
 }
-function delGame(e, id) {
-  // 1. Capturar el ID correcto
-  let targetId = id;
-  if (e && typeof e.stopPropagation === 'function') {
-    e.stopPropagation();
-  } else if (e !== undefined && id === undefined) {
-    targetId = e;
+function delGame(a, b) {
+  if (a && typeof a.stopPropagation === 'function') a.stopPropagation();
+  if (b && typeof b.stopPropagation === 'function') b.stopPropagation();
+
+  let targetId = null;
+  if (a !== undefined && typeof a !== 'object') targetId = a;
+  else if (b !== undefined && typeof b !== 'object') targetId = b;
+  else if (a && a.id) targetId = a.id;
+
+  if (!targetId) return;
+
+  if (!confirm("¿Seguro que quieres borrar este juego?")) return;
+
+  if (Array.isArray(S.activities)) {
+    S.activities = S.activities.filter(item => String(item.id) !== String(targetId));
+  }
+  if (Array.isArray(S.games)) {
+    S.games = S.games.filter(item => String(item.id) !== String(targetId));
   }
 
-  if (!confirm("¿Borrar este juego?")) return;
-
-  // 2. Filtrar convirtiendo a texto para asegurar que lo borra
-  if (S.activities) {
-    S.activities = S.activities.filter(a => String(a.id) !== String(targetId));
-  }
-
-  // 3. Guardar cambios
-  if (typeof guardarEnNube === 'function') guardarEnNube();
-  if (typeof save === 'function') save();
-
-  // 4. Redibujar la vista
   render();
+
+  try {
+    if (typeof guardarEnNube === 'function') guardarEnNube();
+    if (typeof save === 'function') save();
+  } catch (err) {
+    console.warn("Error al guardar en la nube:", err);
+  }
 }
 function pickMode(id){S.play=S.activities.find(a=>a.id===id);S.view="modepick";render()}
 
