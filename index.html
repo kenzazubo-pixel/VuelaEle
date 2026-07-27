@@ -3498,25 +3498,26 @@ function openEditor(id){
   S.view="editor";render();
 }
 function delGame(e, id) {
-  // 1. Evitar que el clic abra la tarjeta del juego
+  // 1. Capturar el ID correcto
+  let targetId = id;
   if (e && typeof e.stopPropagation === 'function') {
     e.stopPropagation();
+  } else if (e !== undefined && id === undefined) {
+    targetId = e;
   }
-  
-  // Soporte por si se llama solo con el id: delGame('123')
-  const targetId = (typeof e === 'string' || typeof e === 'number') ? e : id;
 
   if (!confirm("¿Borrar este juego?")) return;
 
-  // 2. Eliminar de la lista de actividades
-  S.activities = (S.activities || []).filter(a => a.id !== targetId);
+  // 2. Filtrar convirtiendo a texto para asegurar que lo borra
+  if (S.activities) {
+    S.activities = S.activities.filter(a => String(a.id) !== String(targetId));
+  }
 
-  // 3. Guardar cambios (probando ambos métodos para evitar errores)
+  // 3. Guardar cambios
   if (typeof guardarEnNube === 'function') guardarEnNube();
   if (typeof save === 'function') save();
-  if (typeof notify === 'function') notify("Juego eliminado");
 
-  // 4. Refrescar la pantalla
+  // 4. Redibujar la vista
   render();
 }
 function pickMode(id){S.play=S.activities.find(a=>a.id===id);S.view="modepick";render()}
