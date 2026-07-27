@@ -4615,6 +4615,14 @@ function pMystery(a, ps) {
     </div>
   `;
 }
+function openMysteryBox(i) {
+  if (!S.pState.opened) S.pState.opened = [];
+  if (!S.pState.opened.includes(i)) {
+    S.pState.opened.push(i);
+    playSound('receive');
+    render();
+  }
+}
 function openBox(i){const ps=S.pState;if(!ps.opened.includes(i)){ps.opened.push(i);render()}}
 
 render();
