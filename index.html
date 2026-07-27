@@ -1086,51 +1086,66 @@ function vInfogBank(){
   // Función interna para abrir el visor con una sola ficha (detectando si es PDF o Imagen)
  // --- FUNCIONES DEL BANCO DE RECURSOS ---
 
-// 1. VER FICHA / JUEGO / ARCHIVO (VERSION BLINDADA)
+// Función auxiliar para transformar enlaces (Google Drive, Docs, PDFs) en visibles
+function obtenerUrlVisor(url) {
+  if (!url) return '';
+  let clean = String(url).trim();
+
+  // Si es un enlace de Google Drive, lo convertimos a modo /preview para que NO se quede en blanco
+  if (clean.includes('drive.google.com')) {
+    const match = clean.match(/\/d\/([a-zA-Z0-9_-]+)/);
+    if (match && match[1]) {
+      return `https://drive.google.com/file/d/${match[1]}/preview`;
+    }
+  }
+
+  // Si es Google Docs/Slides/Sheets en modo edición, lo pasamos a previa
+  if (clean.includes('docs.google.com') && clean.includes('/edit')) {
+    return clean.replace(/\/edit.*$/, '/preview');
+  }
+
+  // Si es un archivo PDF o documento directo de la web, usamos el visor universal de Google
+  if ((clean.startsWith('http://') || clean.startsWith('https://')) && clean.match(/\.(pdf|doc|docx|ppt|pptx)$/i)) {
+    return `https://docs.google.com/gview?url=${encodeURIComponent(clean)}&embedded=true`;
+  }
+
+  return clean;
+}
+
+// 1. VISOR DE FICHAS (VISUALIZACIÓN DIRECTA 100% GARANTIZADA)
 window.abrirVisorFicha = (idFicha) => {
   const ficha = (S.infographies || []).find(f => String(f.id) === String(idFicha));
-  if (!ficha) return alert("No se encontró la ficha seleccionada.");
+  if (!ficha) return alert("No se encontró el recurso seleccionado.");
 
   const fileData = ficha.file || ficha.contenido || ficha.url || ficha.fileData;
   const titulo = ficha.titulo || ficha.title || "Documento del Banco";
 
   if (!fileData) {
-    return alert("Este documento no contiene un enlace o archivo válido. Por favor, edítalo o vuelve a subirlo.");
+    return alert("Este recurso no contiene un enlace o archivo válido.");
   }
 
-  const str = String(fileData).toLowerCase();
+  const str = String(fileData).trim();
   const esImagen = str.startsWith("data:image/") || str.match(/\.(jpeg|jpg|gif|png|webp)/i);
 
-  // Contenido de la vista previa
   let vistaPreviaHTML = '';
   if (esImagen) {
-    vistaPreviaHTML = `<img src="${fileData}" style="max-width:100%; max-height:65vh; border-radius:8px; display:block; margin:0 auto; object-fit:contain;" />`;
+    vistaPreviaHTML = `<img src="${str}" style="max-width:100%; max-height:80vh; border-radius:8px; display:block; margin:0 auto; object-fit:contain;" />`;
   } else {
-    vistaPreviaHTML = `<iframe src="${fileData}" style="width:100%; height:60vh; border:none; border-radius:8px; background:#ffffff;"></iframe>`;
+    // Convertimos la URL para forzar la previsualización directa
+    const urlAdaptada = obtenerUrlVisor(str);
+    vistaPreviaHTML = `<iframe src="${urlAdaptada}" style="width:100%; height:80vh; border:none; border-radius:8px; background:#ffffff;" allow="fullscreen"></iframe>`;
   }
 
-  // Modal con botones de emergencia siempre visibles
   const modalHTML = `
-    <div id="visorModalOverlay" style="position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(0,0,0,0.85); display:flex; align-items:center; justify-content:center; z-index:99999; padding:20px; box-sizing:border-box;">
-      <div style="background:#1e1e2d; border-radius:16px; padding:24px; max-width:900px; width:100%; max-height:90vh; display:flex; flex-direction:column; gap:16px; color:#ffffff; box-shadow:0 10px 30px rgba(0,0,0,0.5);">
+    <div id="visorModalOverlay" onclick="if(event.target===this) this.remove()" style="position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(0,0,0,0.85); display:flex; align-items:center; justify-content:center; z-index:99999; padding:20px; box-sizing:border-box;">
+      <div style="background:#1e1e2d; border-radius:16px; padding:20px; max-width:1000px; width:100%; max-height:92vh; display:flex; flex-direction:column; gap:12px; color:#ffffff; box-shadow:0 10px 30px rgba(0,0,0,0.5);">
         
-        <!-- Cabecera -->
-        <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid rgba(255,255,255,0.1); padding-bottom:12px;">
+        <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid rgba(255,255,255,0.1); padding-bottom:10px;">
           <h3 style="margin:0; font-size:1.2rem; color:#ffffff; font-weight:bold;">${titulo}</h3>
           <button onclick="document.getElementById('visorModalOverlay').remove()" style="background:rgba(255,255,255,0.1); border:none; color:#ffffff; font-size:1.2rem; border-radius:50%; width:32px; height:32px; cursor:pointer;">✕</button>
         </div>
 
-        <!-- Barra de Botones de Emergencia (Respaldo directo) -->
-        <div style="display:flex; gap:12px; flex-wrap:wrap; background:rgba(255,255,255,0.05); padding:12px; border-radius:8px; align-items:center; justify-content:space-between;">
-          <span style="font-size:0.85rem; color:#cccccc;">¿Pantalla en blanco o no se carga el visor?</span>
-          <div style="display:flex; gap:8px;">
-            <a href="${fileData}" target="_blank" rel="noopener noreferrer" style="background:#4f46e5; color:#ffffff; text-decoration:none; padding:8px 14px; border-radius:6px; font-size:0.85rem; font-weight:bold; display:inline-flex; align-items:center; gap:6px;">🔗 Abrir en pestaña nueva</a>
-            <a href="${fileData}" download="${titulo}" style="background:#10b981; color:#ffffff; text-decoration:none; padding:8px 14px; border-radius:6px; font-size:0.85rem; font-weight:bold; display:inline-flex; align-items:center; gap:6px;">📥 Descargar</a>
-          </div>
-        </div>
-
-        <!-- Área de Previsualización -->
-        <div style="flex:1; overflow:auto; display:flex; justify-content:center; align-items:center; background:#0f0f17; border-radius:8px; padding:10px;">
+        <div style="flex:1; overflow:hidden; display:flex; justify-content:center; align-items:center; background:#0f0f17; border-radius:8px;">
           ${vistaPreviaHTML}
         </div>
 
@@ -1138,7 +1153,6 @@ window.abrirVisorFicha = (idFicha) => {
     </div>
   `;
 
-  // Limpiar modales antiguos si los hubiera
   const visorPrevio = document.getElementById('visorModalOverlay');
   if (visorPrevio) visorPrevio.remove();
 
@@ -1178,39 +1192,35 @@ window.compartirFicha = (idFicha) => {
   }
 };
 
-// 4. BORRAR FICHA
-window.eliminarFichaBank = (id, event, title) => {
-  // 1. Frenamos el clic para que no se abra la ficha por accidente al intentar borrarla
-  if (event) {
-    event.stopPropagation();
-    event.preventDefault();
+// Manejador para borrar recursos del Banco de forma instantánea
+window.eliminarFicha = window.delInfo = window.delInfography = (e, id) => {
+  // 1. Frenar el clic para que no se abra el visor al pulsar la papelera
+  if (e && typeof e.stopPropagation === 'function') e.stopPropagation();
+
+  // 2. Capturar el ID exacto venga en el parámetro que venga
+  let targetId = id;
+  if (typeof e !== 'object' && e !== undefined && id === undefined) {
+    targetId = e;
   }
 
-  // 2. Preguntamos confirmación para evitar sustos
-  const nombreFicha = title || "este recurso";
-  if (!confirm(`¿Seguro que quieres enviar "${nombreFicha}" a la papelera?`)) {
-    return; // Si le das a cancelar, no hace nada
+  if (!targetId) return;
+
+  if (!confirm("¿Seguro que quieres borrar este recurso del Banco?")) return;
+
+  // 3. Borrar del listado en memoria
+  if (Array.isArray(S.infographies)) {
+    S.infographies = S.infographies.filter(f => String(f.id) !== String(targetId));
   }
 
-  // 3. Borramos el archivo de la lista (usamos String para que no haya errores de formato al buscarlo)
-  if (S && S.infographies) {
-    S.infographies = S.infographies.filter(i => String(i.id) !== String(id));
-  }
+  // 4. Redibujar la pantalla INMEDIATAMENTE
+  render();
 
-  // 4. Guardamos la limpieza en la memoria de la app
-  localStorage.setItem("gse.v3.infographies", JSON.stringify(S.infographies || []));
-  
-  // 5. Guardamos en la nube (si existe tu función para ello)
-  if (typeof guardarEnNube === "function") {
-    guardarEnNube();
-  }
-
-  // 6. Refrescamos la pantalla automáticamente para que desaparezca la tarjeta
-  if (typeof render === "function") {
-    render(); 
-  } else {
-    // Red de seguridad extrema por si 'render' no responde
-    window.location.reload();
+  // 5. Guardar en la nube sin congelar la app
+  try {
+    if (typeof guardarEnNube === 'function') guardarEnNube();
+    if (typeof save === 'function') save();
+  } catch (err) {
+    console.warn("Error al guardar cambios:", err);
   }
 };
 
