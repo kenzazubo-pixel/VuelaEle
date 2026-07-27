@@ -4572,19 +4572,21 @@ function pMystery(a, ps) {
   const boxes = a.data.boxes || a.data.options || [];
   if (!ps.opened) ps.opened = [];
 
-  // Paleta de colores vivos y llamativos para cada caja
   const palette = ['#FF5964', '#35A7FF', '#FFC857', '#06D6A0', '#9B5DE5', '#F15BB5', '#FF9F1C', '#00BBF9'];
 
   let gridHtml = '';
   boxes.forEach((box, i) => {
     const isOpen = ps.opened.includes(i);
     const color = palette[i % palette.length];
+    
+    // Extrae el texto real si la caja es un objeto {text: '...'} o una cadena simple
+    const boxText = typeof box === 'object' ? (box.text || box.content || box.val || box.label || Object.values(box)[0] || '') : box;
 
     if (isOpen) {
       gridHtml += `
         <div style="background: #ffffff; border: 3px solid ${color}; border-radius: 16px; padding: 20px 12px; text-align: center; box-shadow: 0 8px 20px rgba(0,0,0,0.08); animation: popIn 0.3s ease;">
           <div style="font-size: 32px; margin-bottom: 6px;">✨</div>
-          <div style="font-weight: 800; font-size: 17px; color: #0F1B3D; word-break: break-word;">${box}</div>
+          <div style="font-weight: 800; font-size: 17px; color: #0F1B3D; word-break: break-word;">${boxText}</div>
         </div>`;
     } else {
       gridHtml += `
@@ -4604,7 +4606,6 @@ function pMystery(a, ps) {
         <span class="tag tag-amber" style="font-size: 14px; padding: 6px 14px;">🎁 ${ps.opened.length} / ${boxes.length} ABIERTAS</span>
       </div>
       
-      <!-- Cuadrícula responsive de 3 o 4 columnas -->
       <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 16px; margin-bottom: 24px;">
         ${gridHtml}
       </div>
