@@ -1112,17 +1112,41 @@ function obtenerUrlVisor(url) {
   return clean;
 }
 
-// 1. VISOR DE FICHAS (VISUALIZACIÓN DIRECTA 100% GARANTIZADA)
+// Función traductora para que Google Drive y otros enlaces se vean siempre
+function obtenerUrlVisor(url) {
+  if (!url) return '';
+  let clean = String(url).trim();
+
+  // Si es un enlace de Google Drive, lo forzamos a modo previsualización
+  if (clean.includes('drive.google.com')) {
+    const match = clean.match(/\/d\/([a-zA-Z0-9_-]+)/);
+    if (match && match[1]) {
+      return `https://drive.google.com/file/d/${match[1]}/preview`;
+    }
+  }
+
+  // Si es Google Docs, lo pasamos a modo previa
+  if (clean.includes('docs.google.com') && clean.includes('/edit')) {
+    return clean.replace(/\/edit.*$/, '/preview');
+  }
+
+  // Si es un PDF directo, usamos el visor de Google
+  if ((clean.startsWith('http://') || clean.startsWith('https://')) && clean.match(/\.(pdf|doc|docx)$/i)) {
+    return `https://docs.google.com/gview?url=${encodeURIComponent(clean)}&embedded=true`;
+  }
+
+  return clean;
+}
+
+// EL MOTOR DEL VISOR BLINDADO
 window.abrirVisorFicha = (idFicha) => {
   const ficha = (S.infographies || []).find(f => String(f.id) === String(idFicha));
   if (!ficha) return alert("No se encontró el recurso seleccionado.");
 
   const fileData = ficha.file || ficha.contenido || ficha.url || ficha.fileData;
-  const titulo = ficha.titulo || ficha.title || "Documento del Banco";
+  const titulo = ficha.titulo || ficha.title || "Documento";
 
-  if (!fileData) {
-    return alert("Este recurso no contiene un enlace o archivo válido.");
-  }
+  if (!fileData) return alert("Este recurso no contiene un enlace válido.");
 
   const str = String(fileData).trim();
   const esImagen = str.startsWith("data:image/") || str.match(/\.(jpeg|jpg|gif|png|webp)/i);
@@ -1131,18 +1155,26 @@ window.abrirVisorFicha = (idFicha) => {
   if (esImagen) {
     vistaPreviaHTML = `<img src="${str}" style="max-width:100%; max-height:80vh; border-radius:8px; display:block; margin:0 auto; object-fit:contain;" />`;
   } else {
-    // Convertimos la URL para forzar la previsualización directa
+    // Aquí usamos el traductor para que no se quede en blanco
     const urlAdaptada = obtenerUrlVisor(str);
-    vistaPreviaHTML = `<iframe src="${urlAdaptada}" style="width:100%; height:80vh; border:none; border-radius:8px; background:#ffffff;" allow="fullscreen"></iframe>`;
+    vistaPreviaHTML = `<iframe src="${urlAdaptada}" style="width:100%; height:75vh; border:none; border-radius:8px; background:#ffffff;" allow="fullscreen"></iframe>`;
   }
 
+  // Dibujamos la ventana emergente con botones de respaldo siempre visibles
   const modalHTML = `
     <div id="visorModalOverlay" onclick="if(event.target===this) this.remove()" style="position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(0,0,0,0.85); display:flex; align-items:center; justify-content:center; z-index:99999; padding:20px; box-sizing:border-box;">
-      <div style="background:#1e1e2d; border-radius:16px; padding:20px; max-width:1000px; width:100%; max-height:92vh; display:flex; flex-direction:column; gap:12px; color:#ffffff; box-shadow:0 10px 30px rgba(0,0,0,0.5);">
+      <div style="background:#1e1e2d; border-radius:16px; padding:20px; max-width:1000px; width:100%; max-height:95vh; display:flex; flex-direction:column; gap:12px; color:#ffffff; box-shadow:0 10px 30px rgba(0,0,0,0.5);">
         
         <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid rgba(255,255,255,0.1); padding-bottom:10px;">
           <h3 style="margin:0; font-size:1.2rem; color:#ffffff; font-weight:bold;">${titulo}</h3>
           <button onclick="document.getElementById('visorModalOverlay').remove()" style="background:rgba(255,255,255,0.1); border:none; color:#ffffff; font-size:1.2rem; border-radius:50%; width:32px; height:32px; cursor:pointer;">✕</button>
+        </div>
+
+        <!-- BOTONES DE RESCATE: Por si acaso falla la previsualización -->
+        <div style="display:flex; gap:10px; background:rgba(255,255,255,0.05); padding:10px; border-radius:8px; justify-content:flex-end;">
+          <span style="margin-right:auto; font-size:0.9rem; align-self:center; color:#ccc;">¿La vista previa está en blanco?</span>
+          <a href="${str}" target="_blank" style="background:#4f46e5; color:#fff; text-decoration:none; padding:6px 12px; border-radius:6px; font-size:0.9rem;">🔗 Abrir pestaña</a>
+          <a href="${str}" download style="background:#10b981; color:#fff; text-decoration:none; padding:6px 12px; border-radius:6px; font-size:0.9rem;">📥 Descargar</a>
         </div>
 
         <div style="flex:1; overflow:hidden; display:flex; justify-content:center; align-items:center; background:#0f0f17; border-radius:8px;">
