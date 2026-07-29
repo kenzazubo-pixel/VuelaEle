@@ -1317,7 +1317,7 @@ window.eliminarFicha = window.delInfo = window.delInfography = (e, id) => {
         <button onclick="event.stopPropagation(); window.abrirVisorFicha('${i.id}')" title="Ver" style="background:none; border:none; color:#4299e1; cursor:pointer; font-size:20px;">👁️</button>
         <button onclick="event.stopPropagation(); window.descargarFicha('${i.id}')" title="Descargar" style="background:none; border:none; color:#48bb78; cursor:pointer; font-size:20px;">📥</button>
         <button onclick="event.stopPropagation(); window.compartirFicha('${i.id}')" title="Copiar / Compartir" style="background:none; border:none; color:#ed8936; cursor:pointer; font-size:20px;">🔗</button>
-        <button onclick="event.stopPropagation(); window.eliminarFichaBank('${i.id}', event, '${(i.title || '').replace(/'/g, "\\'")}')" title="Borrar" style="background:none; border:none; color:#f56565; cursor:pointer; font-size:20px;">🗑️</button>
+        <button onclick="window.eliminarFicha(event, '${i.id}')" title="Borrar" style="background:none; border:none; color:#f56565; cursor:pointer; font-size:20px;">🗑️</button>
       </div>
     </div>
   `;
