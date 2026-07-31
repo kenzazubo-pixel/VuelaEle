@@ -4270,6 +4270,32 @@ function pSpotError(a, ps) {
         .print-header { display: block !important; margin-bottom: 25px; border-bottom: 2px solid #000; padding-bottom: 10px; }
         .print-box { border: 2px solid #000 !important; background: #fff !important; color: #000 !important; font-size: 22px !important; line-height: 2.5 !important; }
       }
+      /* ESTILO UNIFICADO PARA LOS BOTONES PRINCIPALES DE LOS JUEGOS */
+button[onclick*="Comprobar"], 
+button[onclick*="Confirmar"], 
+button[onclick*="siguiente"], 
+button[onclick*="Siguiente"],
+.btn-juego-principal {
+  background: linear-gradient(135deg, #4f46e5, #6366f1) !important;
+  color: #ffffff !important;
+  border: none !important;
+  padding: 12px 28px !important;
+  border-radius: 14px !important;
+  font-family: inherit !important;
+  font-size: 1rem !important;
+  font-weight: bold !important;
+  cursor: pointer !important;
+  box-shadow: 0 4px 15px rgba(79, 70, 229, 0.35) !important;
+  transition: transform 0.15s ease, box-shadow 0.15s ease !important;
+}
+
+button[onclick*="Comprobar"]:hover, 
+button[onclick*="Confirmar"]:hover, 
+button[onclick*="siguiente"]:hover, 
+button[onclick*="Siguiente"]:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(79, 70, 229, 0.5) !important;
+}
       .print-header { display: none; }
     </style>
 
