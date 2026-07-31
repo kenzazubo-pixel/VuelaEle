@@ -4282,7 +4282,7 @@ function pSpotError(a, ps) {
       `;
     }
   } else {
-    activeBox = `<p class="no-print" style="font-size:14px; color:#64748b; font-style:italic; margin:15px 0; font-weight:600;">Haz clic sobre la palabra del texto que creas que contiene un error.</p>`;
+    activeBox = '';
   }
 
   const isAllSolved = ps.score === ps.totalErrors;
@@ -4330,10 +4330,6 @@ function pSpotError(a, ps) {
 
       <!-- BOTONES DE ACCIÓN (SÓLO VISIBLES EN PANTALLA) -->
       <div class="no-print" style="display:flex; gap:10px; flex-direction:column;">
-        <button onclick="printGameWorksheet()" style="width:100%; padding:12px; border-radius:12px; background:#64748b; border:none; color:#ffffff; font-weight:800; font-size:15px; cursor:pointer; box-shadow:0 3px 0 #475569; display:flex; align-items:center; justify-content:center; gap:8px;">
-          🖨️ Imprimir / Descargar en PDF
-        </button>
-
         <button onclick="if(typeof finish === 'function') finish(ps.score, ps.totalErrors);" ${!isAllSolved ? 'disabled' : ''} style="width:100%; padding:14px; border-radius:12px; background:#1cb0f6; border:none; color:#ffffff; font-weight:900; font-size:16px; cursor:${isAllSolved ? 'pointer' : 'default'}; opacity:${isAllSolved ? 1 : 0.4}; box-shadow:0 4px 0 #1890c6;">
           Siguiente ejercicio
         </button>
@@ -6598,10 +6594,7 @@ window.printAnyGameId = function(id) {
       <body>
         <div class="header">
           <div class="title">VuelaEle — ${title}</div>
-          <div class="fields">
-            <span>Nombre del alumno: _____________________________________</span>
-            <span>Fecha: ____________</span>
-          </div>
+          
         </div>
         
         ${bodyHtml}
