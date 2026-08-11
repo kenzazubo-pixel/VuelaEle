@@ -1268,7 +1268,7 @@ window.descargarFicha = (idFicha) => {
 // 3. COMPARTIR / COPIAR ENLACE
 window.compartirFicha = (idFicha) => {
   const ficha = (S.infographies || []).find(f => String(f.id) === String(idFicha));
-  const fileData = ficha ? (ficha.file || ficha.contenido || ficha.url || ficha.fileData) : null;
+  const fileData = ficha ? (ficha.url || ficha.file || ficha.contenido || ficha.fileData) : null;
   if (!fileData) return alert("No hay enlace o contenido para copiar.");
 
   if (navigator.clipboard && navigator.clipboard.writeText) {
