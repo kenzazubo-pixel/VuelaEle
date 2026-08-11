@@ -1268,11 +1268,18 @@ window.descargarFicha = (idFicha) => {
 // 3. COMPARTIR / COPIAR ENLACE
 window.compartirFicha = (idFicha) => {
   const ficha = (S.infographies || []).find(f => String(f.id) === String(idFicha));
-  const fileData = ficha ? (ficha.url || ficha.file || ficha.contenido || ficha.fileData) : null;
-  if (!fileData) return alert("No hay enlace o contenido para copiar.");
+  if (!ficha) return alert("No se encuentra la ficha para compartir.");
+
+  // Generar la URL limpia de la app basada en la dirección actual + el ID del recurso
+  const baseUrl = window.location.href.split('#')[0].split('?')[0];
+  const enlaceLimpio = `${baseUrl}#recurso=${idFicha}`;
 
   if (navigator.clipboard && navigator.clipboard.writeText) {
-    navigator.clipboard.writeText(fileData).then(() => alert("¡Enlace/contenido copiado!")).catch(() => alert("No se pudo copiar automáticamente."));
+    navigator.clipboard.writeText(enlaceLimpio).then(() => {
+      alert("¡Enlace limpio copiado al portapapeles!");
+    }).catch(() => {
+      alert("No se pudo copiar automáticamente.");
+    });
   } else {
     alert("Función de copiado no disponible en este navegador.");
   }
