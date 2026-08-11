@@ -1285,6 +1285,26 @@ window.compartirFicha = (idFicha) => {
   }
 };
 
+// --- FUNCIÓN PARA ABRIR RECURSOS DESDE ENLACE ---
+window.checkDeepLink = () => {
+  const hash = window.location.hash;
+  if (hash && hash.includes('#recurso=')) {
+    const id = hash.split('#recurso=')[1];
+    
+    // Esperamos un momento a que la app cargue los datos
+    setTimeout(() => {
+      if (typeof window.abrirVisorFicha === 'function') {
+        window.abrirVisorFicha(id);
+      } else {
+        console.log("El ID a abrir es:", id);
+      }
+    }, 1000); 
+  }
+};
+
+// Ejecutamos esto al cargar la página
+window.addEventListener('load', window.checkDeepLink);
+
 // Manejador para borrar recursos del Banco de forma instantánea
 window.eliminarFicha = window.delInfo = window.delInfography = (e, id) => {
   // 1. Frenar el clic para que no se abra el visor al pulsar la papelera
