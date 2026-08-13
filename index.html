@@ -1285,34 +1285,36 @@ window.compartirFicha = (idFicha) => {
   }
 };
 
-// --- FUNCIÓN DE ENLACE DIRECTO ESTABILIZADA ---
+// --- FUNCIÓN DE ENLACE DIRECTO DEFINITIVA ---
 window.checkDeepLink = () => {
   const hash = window.location.hash;
-  if (hash && hash.includes('#recurso=')) {
-    const id = hash.split('#recurso=')[1];
-    console.log("✅ ID detectado en el enlace:", id);
+  if (!hash || !hash.includes('#recurso=')) return;
+
+  const id = hash.split('#recurso=')[1];
+  console.log("🔍 Enlace detectado para ID:", id);
+
+  // Intentamos abrir hasta 5 veces (por si la app tarda en renderizar)
+  let intentos = 0;
+  const intervalo = setInterval(() => {
+    intentos++;
     
-    const intentarAbrir = setInterval(() => {
-      // Comprobamos que el banco de recursos ya tenga datos
-      if (window.S && window.S.infographies && window.S.infographies.length > 0) {
-        clearInterval(intentarAbrir); // Paramos el bucle
-        console.log("🚀 Datos listos. Esperando a que la app se estabilice...");
-        
-        // Damos 1 segundo de margen para que la home termine de pintarse y no nos la sobreescriba
-        setTimeout(() => {
-          console.log("🎯 Abriendo visor ahora para el ID:", id);
-          if (typeof window.abrirVisorFicha === 'function') {
-            window.abrirVisorFicha(id);
-          } else {
-            console.error("❌ No se encuentra la función abrirVisorFicha");
-          }
-        }, 1000);
-        
-      }
-    }, 500); 
-  }
+    // 1. ¿Están los datos cargados? 
+    // 2. ¿Existe la función para abrir?
+    const datosListos = (window.S && window.S.infographies && window.S.infographies.length > 0);
+    const funcionExiste = (typeof window.abrirVisorFicha === 'function');
+
+    if (datosListos && funcionExiste) {
+      clearInterval(intervalo);
+      console.log("🚀 Aplicación lista. Abriendo visor...");
+      window.abrirVisorFicha(id);
+    } else if (intentos > 10) { // Si tras 5 segundos no ha cargado, paramos
+      clearInterval(intervalo);
+      console.error("❌ La app no cargó a tiempo para abrir el enlace.");
+    }
+  }, 500); // Comprobamos cada medio segundo
 };
 
+// Ejecutamos esto en cuanto la ventana carga
 window.addEventListener('load', window.checkDeepLink);
 
 // Ejecutamos esto al cargar la página
