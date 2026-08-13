@@ -1265,37 +1265,48 @@ window.descargarFicha = (idFicha) => {
   link.remove();
 };
 
-// 3. COMPARTIR / COPIAR ENLACE DIRECTO (DETECTOR UNIVERSAL)
+// 3. COMPARTIR / COPIAR ENLACE DIRECTO (COMPATIBLE CON FIREBASE)
 window.compartirFicha = (idFicha) => {
   let ficha = null;
 
-  // Buscamos la ficha en CUALQUIER lista que exista dentro de window.S
   if (window.S) {
-    Object.values(window.S).forEach(lista => {
-      if (Array.isArray(lista) && !ficha) {
-        ficha = lista.find(f => f && String(f.id) === String(idFicha));
+    // Recorremos todos los contenedores de datos de la app
+    Object.keys(window.S).forEach(clave => {
+      const contenedor = window.S[clave];
+      if (!contenedor || ficha) return;
+
+      // 1. Si es una lista normal (Array)
+      if (Array.isArray(contenedor)) {
+        ficha = contenedor.find(f => f && (String(f.id) === String(idFicha) || String(f._id) === String(idFicha)));
+      } 
+      // 2. Si es una estructura de Firebase (Objeto/Diccionario)
+      else if (typeof contenedor === 'object') {
+        if (contenedor[idFicha]) {
+          ficha = contenedor[idFicha]; // Acceso directo por clave
+        } else {
+          ficha = Object.values(contenedor).find(f => f && typeof f === 'object' && (String(f.id) === String(idFicha) || String(f._id) === String(idFicha)));
+        }
       }
     });
   }
 
-  // Si no se encuentra con el ID, avisamos
+  // Si no se encuentra
   if (!ficha) {
-    return alert("❌ No se encuentran los datos de la ficha. ID buscado: " + idFicha);
+    return alert("❌ No se encuentran los datos internos de la ficha.");
   }
 
-  // Buscamos el enlace probando todas las propiedades habituales (url, file, link, pdf)
-  const enlaceDirecto = ficha.url || ficha.file || ficha.link || ficha.pdf;
+  // Buscamos la URL en cualquier propiedad posible
+  const enlaceDirecto = ficha.url || ficha.file || ficha.link || ficha.pdf || ficha.driveUrl;
 
   if (!enlaceDirecto || !enlaceDirecto.startsWith('http')) {
-    return alert("⚠️ Esta ficha no tiene una dirección web válida cargada.\nEnlace encontrado: " + enlaceDirecto);
+    return alert("⚠️ Esta ficha no tiene un enlace externo configurado.\nEnlace detectado: " + enlaceDirecto);
   }
 
-  // Intentamos copiar al portapapeles
+  // Copiamos al portapapeles
   if (navigator.clipboard && navigator.clipboard.writeText) {
     navigator.clipboard.writeText(enlaceDirecto).then(() => {
       alert("✅ ¡Enlace directo al documento copiado con éxito!");
     }).catch(() => {
-      // Plan B si el navegador no deja copiar automáticamente
       prompt("Copia este enlace manualmente con Comando + C:", enlaceDirecto);
     });
   } else {
