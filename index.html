@@ -1265,45 +1265,36 @@ window.descargarFicha = (idFicha) => {
   link.remove();
 };
 
-// 3. COMPARTIR / COPIAR ENLACE
+// 3. COMPARTIR / COPIAR ENLACE DIRECTO
 window.compartirFicha = (idFicha) => {
-  const ficha = (S.infographies || []).find(f => String(f.id) === String(idFicha));
-  if (!ficha) return alert("No se encuentra la ficha para compartir.");
+  // 1. Comprobamos si el clic funciona
+  console.log("Botón pulsado. Buscando ID:", idFicha);
 
-  // Generar la URL limpia de la app basada en la dirección actual + el ID del recurso
-  const baseUrl = window.location.href.split('#')[0].split('?')[0];
-  const enlaceLimpio = `${baseUrl}#recurso=${idFicha}`;
-
-  if (navigator.clipboard && navigator.clipboard.writeText) {
-    navigator.clipboard.writeText(enlaceLimpio).then(() => {
-      alert("¡Enlace limpio copiado al portapapeles!");
-    }).catch(() => {
-      alert("No se pudo copiar automáticamente.");
-    });
-  } else {
-    alert("Función de copiado no disponible en este navegador.");
+  // 2. Buscamos la ficha (con un extra de seguridad)
+  const listaFichas = (window.S && window.S.infographies) ? window.S.infographies : [];
+  const ficha = listaFichas.find(f => String(f.id) === String(idFicha));
+  
+  if (!ficha) {
+    return alert("❌ Error 1: No encuentro los datos de esta ficha. ¿Están cargados?");
   }
-};
 
-window.compartirFicha = (idFicha) => {
-  const ficha = (window.S.infographies || []).find(f => String(f.id) === String(idFicha));
-  if (!ficha) return alert("No se encuentra la ficha.");
-
-  // Cogemos el enlace directo al archivo, tal como propones
+  // 3. Buscamos el enlace
   const enlaceDirecto = ficha.url || ficha.file;
-
-  // Comprobamos que sea un enlace web de verdad (que empiece por http)
+  
   if (!enlaceDirecto || !enlaceDirecto.startsWith('http')) {
-    return alert("⚠️ Este recurso no tiene un enlace externo válido. El archivo debe estar subido a la nube.");
+    return alert("⚠️ Error 2: El recurso no tiene un enlace válido a la nube.\nEnlace detectado: " + enlaceDirecto);
   }
 
-  // Copiamos el enlace al portapapeles
+  // 4. Intentamos copiar al portapapeles
   if (navigator.clipboard && navigator.clipboard.writeText) {
     navigator.clipboard.writeText(enlaceDirecto).then(() => {
-      alert("¡Enlace directo al documento copiado con éxito!");
-    }).catch(() => {
-      alert("No se pudo copiar el enlace automáticamente.");
+      alert("✅ ¡Enlace directo al documento copiado con éxito!");
+    }).catch((err) => {
+      alert("❌ Error 3: Tu navegador bloqueó la copia automática.\n" + err);
     });
+  } else {
+    // PLAN B: Si el navegador bloquea el portapapeles
+    alert("⚠️ No se pudo copiar automáticamente. Copia este enlace a mano:\n\n" + enlaceDirecto);
   }
 };
 
