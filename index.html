@@ -1285,40 +1285,27 @@ window.compartirFicha = (idFicha) => {
   }
 };
 
-// --- FUNCIÓN DE ENLACE DIRECTO DEFINITIVA ---
-window.checkDeepLink = () => {
-  const hash = window.location.hash;
-  if (!hash || !hash.includes('#recurso=')) return;
+window.compartirFicha = (idFicha) => {
+  const ficha = (window.S.infographies || []).find(f => String(f.id) === String(idFicha));
+  if (!ficha) return alert("No se encuentra la ficha.");
 
-  const id = hash.split('#recurso=')[1];
-  console.log("🔍 Enlace detectado para ID:", id);
+  // Cogemos el enlace directo al archivo, tal como propones
+  const enlaceDirecto = ficha.url || ficha.file;
 
-  // Intentamos abrir hasta 5 veces (por si la app tarda en renderizar)
-  let intentos = 0;
-  const intervalo = setInterval(() => {
-    intentos++;
-    
-    // 1. ¿Están los datos cargados? 
-    // 2. ¿Existe la función para abrir?
-    const datosListos = (window.S && window.S.infographies && window.S.infographies.length > 0);
-    const funcionExiste = (typeof window.abrirVisorFicha === 'function');
+  // Comprobamos que sea un enlace web de verdad (que empiece por http)
+  if (!enlaceDirecto || !enlaceDirecto.startsWith('http')) {
+    return alert("⚠️ Este recurso no tiene un enlace externo válido. El archivo debe estar subido a la nube.");
+  }
 
-    if (datosListos && funcionExiste) {
-      clearInterval(intervalo);
-      console.log("🚀 Aplicación lista. Abriendo visor...");
-      window.abrirVisorFicha(id);
-    } else if (intentos > 10) { // Si tras 5 segundos no ha cargado, paramos
-      clearInterval(intervalo);
-      console.error("❌ La app no cargó a tiempo para abrir el enlace.");
-    }
-  }, 500); // Comprobamos cada medio segundo
+  // Copiamos el enlace al portapapeles
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(enlaceDirecto).then(() => {
+      alert("¡Enlace directo al documento copiado con éxito!");
+    }).catch(() => {
+      alert("No se pudo copiar el enlace automáticamente.");
+    });
+  }
 };
-
-// Ejecutamos esto en cuanto la ventana carga
-window.addEventListener('load', window.checkDeepLink);
-
-// Ejecutamos esto al cargar la página
-window.addEventListener('load', window.checkDeepLink);
 
 // Manejador para borrar recursos del Banco de forma instantánea
 window.eliminarFicha = window.delInfo = window.delInfography = (e, id) => {
