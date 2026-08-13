@@ -1265,52 +1265,59 @@ window.descargarFicha = (idFicha) => {
   link.remove();
 };
 
-// 3. COMPARTIR / COPIAR ENLACE DIRECTO (COMPATIBLE CON FIREBASE)
+// 3. COMPARTIR / COPIAR ENLACE DIRECTO (RASTREADOR PROFUNDO)
 window.compartirFicha = (idFicha) => {
   let ficha = null;
 
-  if (window.S) {
-    // Recorremos todos los contenedores de datos de la app
-    Object.keys(window.S).forEach(clave => {
-      const contenedor = window.S[clave];
-      if (!contenedor || ficha) return;
-
-      // 1. Si es una lista normal (Array)
-      if (Array.isArray(contenedor)) {
-        ficha = contenedor.find(f => f && (String(f.id) === String(idFicha) || String(f._id) === String(idFicha)));
-      } 
-      // 2. Si es una estructura de Firebase (Objeto/Diccionario)
-      else if (typeof contenedor === 'object') {
-        if (contenedor[idFicha]) {
-          ficha = contenedor[idFicha]; // Acceso directo por clave
-        } else {
-          ficha = Object.values(contenedor).find(f => f && typeof f === 'object' && (String(f.id) === String(idFicha) || String(f._id) === String(idFicha)));
+  // Función interna para buscar el ID en cualquier rincón de la memoria
+  function buscarEnMemoria(obj, profundidad = 0) {
+    if (!obj || profundidad > 4 || ficha) return;
+    try {
+      if (Array.isArray(obj)) {
+        ficha = obj.find(f => f && typeof f === 'object' && 
+          (String(f.id) === String(idFicha) || String(f._id) === String(idFicha) || String(f.timestamp) === String(idFicha)));
+        if (ficha) return;
+        for (let item of obj) {
+          if (item && typeof item === 'object') buscarEnMemoria(item, profundidad + 1);
+        }
+      } else if (typeof obj === 'object') {
+        if (obj[idFicha]) { ficha = obj[idFicha]; return; }
+        if (String(obj.id) === String(idFicha) || String(obj._id) === String(idFicha)) { ficha = obj; return; }
+        for (let clave in obj) {
+          if (clave === 'window' || clave === 'document' || clave === 'top' || clave === 'parent') continue;
+          if (obj[clave] && typeof obj[clave] === 'object') {
+            buscarEnMemoria(obj[clave], profundidad + 1);
+          }
         }
       }
-    });
+    } catch (e) {}
   }
 
-  // Si no se encuentra
+  // Rastreamos primero en window.S y, si no aparece, en todo la ventana (window)
+  if (window.S) buscarEnMemoria(window.S);
+  if (!ficha) buscarEnMemoria(window);
+
+  // Si tras escanear toda la memoria no la encuentra:
   if (!ficha) {
-    return alert("❌ No se encuentran los datos internos de la ficha.");
+    return alert("❌ No se encontraron los datos de esta ficha en la memoria.");
   }
 
-  // Buscamos la URL en cualquier propiedad posible
-  const enlaceDirecto = ficha.url || ficha.file || ficha.link || ficha.pdf || ficha.driveUrl;
+  // Extraemos el enlace (probe todas las posibles propiedades)
+  const enlaceDirecto = ficha.url || ficha.file || ficha.link || ficha.pdf || ficha.driveUrl || ficha.archivo;
 
   if (!enlaceDirecto || !enlaceDirecto.startsWith('http')) {
-    return alert("⚠️ Esta ficha no tiene un enlace externo configurado.\nEnlace detectado: " + enlaceDirecto);
+    return alert("⚠️ La ficha existe (" + (ficha.titulo || ficha.title || "Sin título") + "), pero no tiene un enlace web o PDF asignado.");
   }
 
   // Copiamos al portapapeles
   if (navigator.clipboard && navigator.clipboard.writeText) {
     navigator.clipboard.writeText(enlaceDirecto).then(() => {
-      alert("✅ ¡Enlace directo al documento copiado con éxito!");
+      alert("✅ ¡Enlace directo copiado al portapapeles con éxito!");
     }).catch(() => {
-      prompt("Copia este enlace manualmente con Comando + C:", enlaceDirecto);
+      prompt("Copia este enlace manualmente (Comando + C):", enlaceDirecto);
     });
   } else {
-    prompt("Copia este enlace manualmente con Comando + C:", enlaceDirecto);
+    prompt("Copia este enlace manualmente (Comando + C):", enlaceDirecto);
   }
 };
 
