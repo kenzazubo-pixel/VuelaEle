@@ -1285,22 +1285,28 @@ window.compartirFicha = (idFicha) => {
   }
 };
 
-// --- FUNCIÓN PARA ABRIR RECURSOS DESDE ENLACE ---
+// --- FUNCIÓN MEJORADA PARA ABRIR RECURSOS ---
 window.checkDeepLink = () => {
+  console.log("🔍 Buscando enlace directo...");
   const hash = window.location.hash;
+  
   if (hash && hash.includes('#recurso=')) {
     const id = hash.split('#recurso=')[1];
+    console.log("✅ ID detectado:", id);
     
-    // Esperamos un momento a que la app cargue los datos
+    // Esperamos 3 segundos (3000ms) para dar tiempo a que la app cargue todo
     setTimeout(() => {
+      console.log("🚀 Intentando abrir la ficha:", id);
       if (typeof window.abrirVisorFicha === 'function') {
         window.abrirVisorFicha(id);
       } else {
-        console.log("El ID a abrir es:", id);
+        console.error("❌ Error: No se encuentra la función abrirVisorFicha");
       }
-    }, 1000); 
+    }, 3000); 
   }
 };
+
+window.addEventListener('load', window.checkDeepLink);
 
 // Ejecutamos esto al cargar la página
 window.addEventListener('load', window.checkDeepLink);
