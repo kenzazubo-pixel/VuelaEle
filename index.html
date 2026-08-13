@@ -1265,62 +1265,68 @@ window.descargarFicha = (idFicha) => {
   link.remove();
 };
 
-// 3. COMPARTIR / COPIAR ENLACE DIRECTO (RASTREADOR PROFUNDO)
+// 3. COMPARTIR / COPIAR ENLACE DIRECTO
 window.compartirFicha = (idFicha) => {
   let ficha = null;
 
-  // Función interna para buscar el ID en cualquier rincón de la memoria
-  function buscarEnMemoria(obj, profundidad = 0) {
-    if (!obj || profundidad > 4 || ficha) return;
-    try {
-      if (Array.isArray(obj)) {
-        ficha = obj.find(f => f && typeof f === 'object' && 
-          (String(f.id) === String(idFicha) || String(f._id) === String(idFicha) || String(f.timestamp) === String(idFicha)));
-        if (ficha) return;
-        for (let item of obj) {
-          if (item && typeof item === 'object') buscarEnMemoria(item, profundidad + 1);
-        }
-      } else if (typeof obj === 'object') {
-        if (obj[idFicha]) { ficha = obj[idFicha]; return; }
-        if (String(obj.id) === String(idFicha) || String(obj._id) === String(idFicha)) { ficha = obj; return; }
-        for (let clave in obj) {
-          if (clave === 'window' || clave === 'document' || clave === 'top' || clave === 'parent') continue;
-          if (obj[clave] && typeof obj[clave] === 'object') {
-            buscarEnMemoria(obj[clave], profundidad + 1);
-          }
-        }
-      }
-    } catch (e) {}
+  // 1. Buscamos directamente en las listas de la app (incluida vInfogBank)
+  const listas = [
+    window.vInfogBank,
+    window.vInfographies,
+    window.infografias,
+    window.infographies,
+    (window.S && window.S.infographies),
+    (window.S && window.S.recursos)
+  ];
+
+  for (let lista of listas) {
+    if (!lista) continue;
+    if (Array.isArray(lista)) {
+      ficha = lista.find(f => f && (String(f.id) === String(idFicha) || String(f._id) === String(idFicha) || String(f.timestamp) === String(idFicha)));
+    } else if (typeof lista === 'object') {
+      ficha = lista[idFicha] || Object.values(lista).find(f => f && (String(f.id) === String(idFicha) || String(f._id) === String(idFicha)));
+    }
+    if (ficha) break;
   }
 
-  // Rastreamos primero en window.S y, si no aparece, en todo la ventana (window)
-  if (window.S) buscarEnMemoria(window.S);
-  if (!ficha) buscarEnMemoria(window);
-
-  // Si tras escanear toda la memoria no la encuentra:
+  // 2. Si no la encuentra en las listas principales, busca en todo el sistema
   if (!ficha) {
-    return alert("❌ No se encontraron los datos de esta ficha en la memoria.");
+    for (let key in window) {
+      if (key.match(/infog|recurso|ficha|bank|banco/i)) {
+        try {
+          let val = window[key];
+          if (Array.isArray(val)) {
+            ficha = val.find(f => f && (String(f.id) === String(idFicha) || String(f._id) === String(idFicha)));
+          }
+          if (ficha) break;
+        } catch(e) {}
+      }
+    }
   }
 
-  // Extraemos el enlace (probe todas las posibles propiedades)
-  const enlaceDirecto = ficha.url || ficha.file || ficha.link || ficha.pdf || ficha.driveUrl || ficha.archivo;
-
-  if (!enlaceDirecto || !enlaceDirecto.startsWith('http')) {
-    return alert("⚠️ La ficha existe (" + (ficha.titulo || ficha.title || "Sin título") + "), pero no tiene un enlace web o PDF asignado.");
+  // Si tras buscar en vInfogBank no aparece:
+  if (!ficha) {
+    return alert("❌ No se encontraron los datos de la ficha (ID: " + idFicha + ").");
   }
 
-  // Copiamos al portapapeles
+  // 3. Extraemos el enlace al archivo (URL / PDF / Drive)
+  const enlace = ficha.url || ficha.file || ficha.link || ficha.pdf || ficha.driveUrl || ficha.archivo;
+
+  if (!enlace || typeof enlace !== 'string' || !enlace.startsWith('http')) {
+    return alert("⚠️ La ficha existe ('" + (ficha.titulo || ficha.title || "Ficha") + "'), pero no tiene un enlace a la nube (http...) asignado.");
+  }
+
+  // 4. Copiamos el enlace
   if (navigator.clipboard && navigator.clipboard.writeText) {
-    navigator.clipboard.writeText(enlaceDirecto).then(() => {
-      alert("✅ ¡Enlace directo copiado al portapapeles con éxito!");
+    navigator.clipboard.writeText(enlace).then(() => {
+      alert("✅ ¡Enlace directo copiado al portapapeles!");
     }).catch(() => {
-      prompt("Copia este enlace manualmente (Comando + C):", enlaceDirecto);
+      prompt("Copia este enlace manualmente (Comando + C):", enlace);
     });
   } else {
-    prompt("Copia este enlace manualmente (Comando + C):", enlaceDirecto);
+    prompt("Copia este enlace manualmente (Comando + C):", enlace);
   }
 };
-
 // Manejador para borrar recursos del Banco de forma instantánea
 window.eliminarFicha = window.delInfo = window.delInfography = (e, id) => {
   // 1. Frenar el clic para que no se abra el visor al pulsar la papelera
