@@ -1265,36 +1265,41 @@ window.descargarFicha = (idFicha) => {
   link.remove();
 };
 
-// 3. COMPARTIR / COPIAR ENLACE DIRECTO
+// 3. COMPARTIR / COPIAR ENLACE DIRECTO (DETECTOR UNIVERSAL)
 window.compartirFicha = (idFicha) => {
-  // 1. Comprobamos si el clic funciona
-  console.log("Botón pulsado. Buscando ID:", idFicha);
+  let ficha = null;
 
-  // 2. Buscamos la ficha (con un extra de seguridad)
-  const listaFichas = (window.S && window.S.infographies) ? window.S.infographies : [];
-  const ficha = listaFichas.find(f => String(f.id) === String(idFicha));
-  
+  // Buscamos la ficha en CUALQUIER lista que exista dentro de window.S
+  if (window.S) {
+    Object.values(window.S).forEach(lista => {
+      if (Array.isArray(lista) && !ficha) {
+        ficha = lista.find(f => f && String(f.id) === String(idFicha));
+      }
+    });
+  }
+
+  // Si no se encuentra con el ID, avisamos
   if (!ficha) {
-    return alert("❌ Error 1: No encuentro los datos de esta ficha. ¿Están cargados?");
+    return alert("❌ No se encuentran los datos de la ficha. ID buscado: " + idFicha);
   }
 
-  // 3. Buscamos el enlace
-  const enlaceDirecto = ficha.url || ficha.file;
-  
+  // Buscamos el enlace probando todas las propiedades habituales (url, file, link, pdf)
+  const enlaceDirecto = ficha.url || ficha.file || ficha.link || ficha.pdf;
+
   if (!enlaceDirecto || !enlaceDirecto.startsWith('http')) {
-    return alert("⚠️ Error 2: El recurso no tiene un enlace válido a la nube.\nEnlace detectado: " + enlaceDirecto);
+    return alert("⚠️ Esta ficha no tiene una dirección web válida cargada.\nEnlace encontrado: " + enlaceDirecto);
   }
 
-  // 4. Intentamos copiar al portapapeles
+  // Intentamos copiar al portapapeles
   if (navigator.clipboard && navigator.clipboard.writeText) {
     navigator.clipboard.writeText(enlaceDirecto).then(() => {
       alert("✅ ¡Enlace directo al documento copiado con éxito!");
-    }).catch((err) => {
-      alert("❌ Error 3: Tu navegador bloqueó la copia automática.\n" + err);
+    }).catch(() => {
+      // Plan B si el navegador no deja copiar automáticamente
+      prompt("Copia este enlace manualmente con Comando + C:", enlaceDirecto);
     });
   } else {
-    // PLAN B: Si el navegador bloquea el portapapeles
-    alert("⚠️ No se pudo copiar automáticamente. Copia este enlace a mano:\n\n" + enlaceDirecto);
+    prompt("Copia este enlace manualmente con Comando + C:", enlaceDirecto);
   }
 };
 
