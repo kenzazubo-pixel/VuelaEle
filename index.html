@@ -1285,27 +1285,29 @@ window.compartirFicha = (idFicha) => {
   }
 };
 
-// --- FUNCIÓN DE ENLACE DIRECTO INTELIGENTE ---
+// --- FUNCIÓN DE ENLACE DIRECTO ESTABILIZADA ---
 window.checkDeepLink = () => {
   const hash = window.location.hash;
   if (hash && hash.includes('#recurso=')) {
     const id = hash.split('#recurso=')[1];
     console.log("✅ ID detectado en el enlace:", id);
     
-    // Comprobamos cada 0.5 segundos si los datos de Firebase ya están listos
     const intentarAbrir = setInterval(() => {
-      // Verificamos si S.infographies ya tiene elementos cargados
+      // Comprobamos que el banco de recursos ya tenga datos
       if (window.S && window.S.infographies && window.S.infographies.length > 0) {
-        clearInterval(intentarAbrir); // ¡Paramos el bucle, ya tenemos los datos!
-        console.log("🚀 Datos listos, abriendo visor para el ID:", id);
+        clearInterval(intentarAbrir); // Paramos el bucle
+        console.log("🚀 Datos listos. Esperando a que la app se estabilice...");
         
-        if (typeof window.abrirVisorFicha === 'function') {
-          window.abrirVisorFicha(id);
-        } else {
-          console.error("❌ No se encuentra la función abrirVisorFicha");
-        }
-      } else {
-        console.log("⏳ Esperando a que cargue el banco de recursos...");
+        // Damos 1 segundo de margen para que la home termine de pintarse y no nos la sobreescriba
+        setTimeout(() => {
+          console.log("🎯 Abriendo visor ahora para el ID:", id);
+          if (typeof window.abrirVisorFicha === 'function') {
+            window.abrirVisorFicha(id);
+          } else {
+            console.error("❌ No se encuentra la función abrirVisorFicha");
+          }
+        }, 1000);
+        
       }
     }, 500); 
   }
